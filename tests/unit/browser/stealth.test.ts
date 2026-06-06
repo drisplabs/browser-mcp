@@ -38,6 +38,8 @@ describe('buildStealthEvasionScript', () => {
     expect(script).toMatch(/window\.chrome/);
     expect(script).toMatch(/permissions/);
     expect(script).toMatch(/languages/);
+    // Notification deref must be guarded so it can't throw on insecure contexts.
+    expect(script).toMatch(/typeof Notification/);
   });
 
   it('includes the User-Agent strip only when headless', () => {

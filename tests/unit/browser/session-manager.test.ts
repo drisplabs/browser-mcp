@@ -180,13 +180,15 @@ describe('SessionManager', () => {
 
       await sessionManager.createPage('https://example.com');
 
-      const injectCall = mockCdpSession.send.mock.calls.find(
+      // Find the actual inject call's invocation order (not an assumed index),
+      // so this stays load-bearing even if other CDP sends are added before it.
+      const injectIdx = mockCdpSession.send.mock.calls.findIndex(
         ([method]) => method === 'Page.addScriptToEvaluateOnNewDocument'
       );
-      expect(injectCall).toBeDefined();
+      expect(injectIdx).toBeGreaterThanOrEqual(0);
 
       // Stealth injection must run BEFORE goto so it covers the first document.
-      const injectOrder = mockCdpSession.send.mock.invocationCallOrder[0];
+      const injectOrder = mockCdpSession.send.mock.invocationCallOrder[injectIdx];
       const gotoOrder = mockPage.goto.mock.invocationCallOrder[0];
       expect(injectOrder).toBeLessThan(gotoOrder);
     });

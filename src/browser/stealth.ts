@@ -92,7 +92,12 @@ export function buildStealthEvasionScript(opts: { headless: boolean }): string {
     if (query) {
       navigator.permissions.query = (params) =>
         params && params.name === 'notifications'
-          ? Promise.resolve({ state: Notification.permission, onchange: null })
+          ? Promise.resolve({
+              // Guard: window.Notification is undefined in insecure/sandboxed
+              // contexts — deref'ing it here would reject the page's own query.
+              state: typeof Notification !== 'undefined' ? Notification.permission : 'default',
+              onchange: null,
+            })
           : query.call(navigator.permissions, params);
     }${
       opts.headless

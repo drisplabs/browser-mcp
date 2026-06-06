@@ -193,6 +193,23 @@ describe('ensureBrowserReady', () => {
       expect(sessionManager.isRunning()).toBe(true);
     });
 
+    it('should thread config.stealth through to launch flags', async () => {
+      const ensureBrowserReady = await getEnsureBrowserReady();
+
+      const config: BrowserSessionConfig = {
+        headless: false,
+        browserMode: 'persistent',
+        stealth: true,
+      };
+
+      await ensureBrowserReady(sessionManager, config);
+
+      const launchArgs = (puppeteer.launch as Mock).mock.calls[0][0] as {
+        ignoreDefaultArgs?: string[];
+      };
+      expect(launchArgs.ignoreDefaultArgs).toEqual(['--enable-automation']);
+    });
+
     it('should NOT fall back on failure', async () => {
       const ensureBrowserReady = await getEnsureBrowserReady();
 
