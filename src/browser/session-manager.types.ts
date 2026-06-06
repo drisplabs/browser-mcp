@@ -75,6 +75,12 @@ export interface LaunchOptions {
 
   /** Use pipe transport instead of WebSocket. Defaults to true for isolated profiles, false for persistent (enables reconnection). */
   pipe?: boolean;
+
+  /**
+   * Apply fingerprint-only stealth: suppresses automation launch flags and
+   * injects anti-detection patches into each page. Default false.
+   */
+  stealth?: boolean;
 }
 
 /**
@@ -114,4 +120,11 @@ export interface ConnectOptions {
    * Use when reconnecting to a browser that this server originally launched.
    */
   ownedReconnect?: boolean;
+
+  /**
+   * Apply fingerprint-only stealth to pages. Default false. Only takes effect
+   * for owned (non-external) browsers — connecting to the user's real Chrome is
+   * treated as external and skips injection.
+   */
+  stealth?: boolean;
 }

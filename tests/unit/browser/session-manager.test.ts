@@ -152,6 +152,59 @@ describe('SessionManager', () => {
     });
   });
 
+  describe('stealth', () => {
+    it('passes automation-suppressing launch flags when stealth is on', async () => {
+      await sessionManager.launch({ stealth: true });
+
+      const launchArgs = vi.mocked(puppeteer.launch).mock.calls[0][0] as {
+        args: string[];
+        ignoreDefaultArgs?: string[];
+      };
+      expect(launchArgs.ignoreDefaultArgs).toEqual(['--enable-automation']);
+      expect(launchArgs.args).toContain('--disable-blink-features=AutomationControlled');
+    });
+
+    it('does not set ignoreDefaultArgs or the blink flag when stealth is off', async () => {
+      await sessionManager.launch({ stealth: false });
+
+      const launchArgs = vi.mocked(puppeteer.launch).mock.calls[0][0] as {
+        args: string[];
+        ignoreDefaultArgs?: string[];
+      };
+      expect(launchArgs.ignoreDefaultArgs).toBeUndefined();
+      expect(launchArgs.args).not.toContain('--disable-blink-features=AutomationControlled');
+    });
+
+    it('injects the evasion script before the first navigation', async () => {
+      await sessionManager.launch({ stealth: true });
+
+      await sessionManager.createPage('https://example.com');
+
+      // Find the actual inject call's invocation order (not an assumed index),
+      // so this stays load-bearing even if other CDP sends are added before it.
+      const injectIdx = mockCdpSession.send.mock.calls.findIndex(
+        ([method]) => method === 'Page.addScriptToEvaluateOnNewDocument'
+      );
+      expect(injectIdx).toBeGreaterThanOrEqual(0);
+
+      // Stealth injection must run BEFORE goto so it covers the first document.
+      const injectOrder = mockCdpSession.send.mock.invocationCallOrder[injectIdx];
+      const gotoOrder = mockPage.goto.mock.invocationCallOrder[0];
+      expect(injectOrder).toBeLessThan(gotoOrder);
+    });
+
+    it('does not inject when stealth is off', async () => {
+      await sessionManager.launch({ stealth: false });
+
+      await sessionManager.createPage('https://example.com');
+
+      const injectCall = mockCdpSession.send.mock.calls.find(
+        ([method]) => method === 'Page.addScriptToEvaluateOnNewDocument'
+      );
+      expect(injectCall).toBeUndefined();
+    });
+  });
+
   describe('getPage', () => {
     beforeEach(async () => {
       await sessionManager.launch();
@@ -371,6 +424,19 @@ describe('SessionManager', () => {
         })
       );
       expect(sessionManager.isRunning()).toBe(true);
+    });
+
+    it('skips stealth injection for external browsers even when stealth is on', async () => {
+      // Connecting to the user's real Chrome (external) — already a genuine
+      // fingerprint, so stealth must be a no-op.
+      await sessionManager.connect({ stealth: true });
+
+      await sessionManager.createPage('https://example.com');
+
+      const injectCall = mockCdpSession.send.mock.calls.find(
+        ([method]) => method === 'Page.addScriptToEvaluateOnNewDocument'
+      );
+      expect(injectCall).toBeUndefined();
     });
 
     it('should use custom browserURL', async () => {

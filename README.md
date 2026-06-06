@@ -716,6 +716,24 @@ AWI_BROWSER_MODE=persistent npx agent-web-interface
 AWI_BROWSER_MODE=isolated AWI_HEADLESS=true npx agent-web-interface
 ```
 
+### Stealth (`AWI_STEALTH`)
+
+Launched browsers (`persistent`/`isolated`) carry Puppeteer's automation tells —
+`navigator.webdriver`, the "controlled by automated test software" infobar, an empty
+plugins list — which some sites use to false-positive a legitimate session as a bot.
+`AWI_STEALTH` (default `true`) applies **fingerprint-only** patches so a launched Chrome
+looks like your everyday Chrome. It changes nothing about behavior (clicks and typing are
+untouched) and is a **no-op in `user` mode**, where the connected Chrome already has a
+genuine fingerprint.
+
+```bash
+# Disable stealth (raw Puppeteer fingerprint)
+AWI_STEALTH=false AWI_BROWSER_MODE=isolated npx agent-web-interface
+```
+
+This is not a CAPTCHA or anti-bot bypass tool — it only avoids false-positive blocking of
+ordinary, authorized use.
+
 ---
 
 ## Using your existing Chrome

@@ -8,6 +8,8 @@
  *   AWI_BROWSER_MODE  - user | persistent | isolated (default: unset = auto fallback)
  *   AWI_CDP_URL       - Explicit CDP endpoint (overrides mode entirely)
  *   AWI_HEADLESS      - true | false (default: false, only for persistent/isolated)
+ *   AWI_STEALTH       - true | false (default: true) fingerprint-only anti-detection
+ *                       for launched browsers; no-op when connecting to user Chrome
  *
  * @module browser/browser-session-config
  */
@@ -35,6 +37,13 @@ export interface BrowserSessionConfig {
 
   /** Explicit CDP endpoint URL. Overrides browserMode entirely. */
   cdpUrl?: string;
+
+  /**
+   * Apply fingerprint-only anti-detection patches to launched browsers.
+   * Default true. No-op when connecting to the user's real Chrome (it already
+   * has a genuine fingerprint).
+   */
+  stealth?: boolean;
 }
 
 /**
@@ -52,9 +61,14 @@ export function loadBrowserConfig(): BrowserSessionConfig {
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty string must be falsy
   const cdpUrl = process.env.AWI_CDP_URL?.trim() || undefined;
 
+  // Stealth defaults ON; disabled only by an explicit falsy value.
+  const stealthRaw = process.env.AWI_STEALTH?.trim().toLowerCase();
+  const stealth = !(stealthRaw !== undefined && ['false', '0', 'no', 'off'].includes(stealthRaw));
+
   return {
     browserMode,
     headless: process.env.AWI_HEADLESS?.trim().toLowerCase() === 'true',
     cdpUrl,
+    stealth,
   };
 }
