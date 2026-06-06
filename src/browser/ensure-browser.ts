@@ -47,7 +47,7 @@ export async function ensureBrowserReady(
   if (config.cdpUrl) {
     logger.info('Connecting to explicit CDP endpoint', { cdpUrl: config.cdpUrl });
     try {
-      await session.connect({ endpointUrl: config.cdpUrl });
+      await session.connect({ endpointUrl: config.cdpUrl, stealth: config.stealth });
       logger.info('Connected to CDP endpoint');
     } catch (error) {
       const msg = extractErrorMessage(error);
@@ -62,7 +62,7 @@ export async function ensureBrowserReady(
   // Explicit mode — try it only, no fallback
   if (config.browserMode) {
     logger.info('Browser mode (explicit)', { mode: config.browserMode });
-    await attemptMode(session, config.browserMode, config.headless);
+    await attemptMode(session, config.browserMode, config);
     return;
   }
 
@@ -72,7 +72,7 @@ export async function ensureBrowserReady(
   for (const mode of AUTO_FALLBACK_CHAIN) {
     try {
       logger.info('Browser mode (auto)', { attempting: mode });
-      await attemptMode(session, mode, config.headless);
+      await attemptMode(session, mode, config);
       return;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(extractErrorMessage(error));
@@ -92,12 +92,12 @@ export async function ensureBrowserReady(
 async function attemptMode(
   session: SessionManager,
   mode: BrowserMode,
-  headless: boolean
+  config: BrowserSessionConfig
 ): Promise<void> {
   if (mode === 'user') {
     // Puppeteer's channel:'chrome' reads DevToolsActivePort from Chrome's well-known user data dir
     try {
-      await session.connect({ autoConnect: true });
+      await session.connect({ autoConnect: true, stealth: config.stealth });
       logger.info('Connected to user Chrome');
     } catch (error) {
       const msg = extractErrorMessage(error);
@@ -109,7 +109,7 @@ async function attemptMode(
   } else {
     const isolated = mode === 'isolated';
     try {
-      await session.launch({ headless, isolated });
+      await session.launch({ headless: config.headless, isolated, stealth: config.stealth });
       logger.info(`Launched browser (${mode} profile)`);
     } catch (error) {
       const msg = extractErrorMessage(error);

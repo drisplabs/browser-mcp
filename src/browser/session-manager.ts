@@ -15,6 +15,7 @@ import puppeteer, {
   TargetType,
 } from 'puppeteer-core';
 import { PuppeteerCdpClient } from '../cdp/puppeteer-cdp-client.js';
+import { applyStealthToPage, buildStealthLaunchOptions } from './stealth.js';
 import { PageRegistry, type PageHandle } from './page-registry.js';
 import { getLogger } from '../shared/services/logging.service.js';
 import { BrowserSessionError } from '../shared/errors/browser-session.error.js';
@@ -67,6 +68,10 @@ export class SessionManager {
   private readonly registry: PageRegistry;
   private readonly logger = getLogger();
   private isExternalBrowser = false;
+  /** Whether fingerprint-only stealth is active for this session. */
+  private stealthEnabled = false;
+  /** Whether the browser was launched headless (drives stealth UA normalization). */
+  private launchedHeadless = false;
   /** Connection state machine */
   private _connectionState: ConnectionState = 'idle';
   /** State change listeners */
@@ -173,7 +178,11 @@ export class SessionManager {
       isolated = false,
       userDataDir,
       args = [],
+      stealth = false,
     } = options;
+
+    this.stealthEnabled = stealth;
+    this.launchedHeadless = headless;
 
     // Determine profile directory
     let profileDir: string | undefined;
@@ -198,11 +207,14 @@ export class SessionManager {
     let timeoutId: NodeJS.Timeout | undefined;
 
     try {
-      // Build Chrome args
+      // Build Chrome args. Stealth flags (empty when disabled) suppress the
+      // automation tells; user-supplied args take precedence (appended last).
+      const stealthLaunch = buildStealthLaunchOptions(stealth);
       const chromeArgs = [
         '--hide-crash-restore-bubble',
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
+        ...stealthLaunch.args,
         ...args,
       ];
 
@@ -214,6 +226,10 @@ export class SessionManager {
         defaultViewport: viewport ?? null,
         pipe,
         args: chromeArgs,
+        // Only set when stealth is on; omitting it preserves Puppeteer defaults.
+        ...(stealthLaunch.ignoreDefaultArgs.length
+          ? { ignoreDefaultArgs: stealthLaunch.ignoreDefaultArgs }
+          : {}),
       });
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
@@ -429,6 +445,10 @@ export class SessionManager {
 
       this.browser = browser;
       this.isExternalBrowser = !options.ownedReconnect;
+      // Stealth page injection only runs for owned (non-external) browsers;
+      // connecting to the user's real Chrome already has a genuine fingerprint.
+      this.stealthEnabled = options.stealth ?? false;
+      this.launchedHeadless = false;
 
       // Setup disconnect listener
       this.setupBrowserListeners();
@@ -519,6 +539,11 @@ export class SessionManager {
 
     this.registry.updateMetadata(handle.page_id, { url: page.url() });
 
+    // Adopted tabs are already loaded, so the injected init script only affects
+    // subsequent navigations of this tab — acceptable, and moot for external
+    // (user-Chrome) sessions which skip stealth entirely.
+    await this.applyStealth(handle);
+
     await this.setupPageTracking(page);
 
     this.logger.debug('Adopted page', { page_id: handle.page_id, url: page.url() });
@@ -544,6 +569,9 @@ export class SessionManager {
     const handle = this.registry.register(page, cdpClient);
 
     this.logger.debug('Created page', { page_id: handle.page_id });
+
+    // Apply stealth BEFORE the first navigation so the init script covers it.
+    await this.applyStealth(handle);
 
     if (url) {
       await page.goto(url, { waitUntil: 'domcontentloaded' });
@@ -1194,6 +1222,28 @@ export class SessionManager {
     if (this.browser && this.browserDisconnectHandler) {
       this.browser.off('disconnected', this.browserDisconnectHandler);
       this.browserDisconnectHandler = null;
+    }
+  }
+
+  /**
+   * Apply fingerprint-only stealth to a page, if enabled.
+   *
+   * No-op when stealth is disabled or when connected to an external browser
+   * (the user's real Chrome already has a genuine fingerprint). Must run BEFORE
+   * the first navigation so the injected init script covers the first document.
+   */
+  private async applyStealth(handle: PageHandle): Promise<void> {
+    if (!this.stealthEnabled || this.isExternalBrowser) {
+      return;
+    }
+    try {
+      await applyStealthToPage(handle.cdp, { headless: this.launchedHeadless });
+    } catch (error) {
+      // Stealth is best-effort hardening — never fail page creation over it.
+      this.logger.warning('Stealth injection failed', {
+        page_id: handle.page_id,
+        error: extractErrorMessage(error),
+      });
     }
   }
 
