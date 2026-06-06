@@ -1,5 +1,5 @@
 ---
-name: agent-web-interface-guide
+name: agent-web-interface
 description: >
   MUST load BEFORE any mcp__agent-web-interface__* tool call (navigate, snapshot, click, type, find, get_element, get_form, press, select, scroll, list_pages, screenshot). Load the instant a task mentions a URL, a bare domain, or any live-site interaction — even a single click or "just open this page". Without it, browser work yields brittle selectors, prose instead of structured observations, stale eid reuse, and broken handoff to test-writing skills. Trigger on ANY of: "open", "go to", "visit", "navigate to", "browse to", "check the page", "walk through the flow", "click", "press", "tap", "fill in", "submit", "type into", "select dropdown", "log in", "sign up", "add to cart", "checkout", "search the site", "find the element", "inspect the form", "capture selectors", "explore the site", "screenshot", "reproduce on that url", or any mention of pages, forms, buttons, dropdowns, or dialogs on a live site. Also load on subagent dispatch with browser MCP access. If even a 1% chance applies, LOAD IT.
 allowed-tools: mcp__agent-web-interface__navigate mcp__agent-web-interface__snapshot mcp__agent-web-interface__find mcp__agent-web-interface__get_element mcp__agent-web-interface__scroll_to mcp__agent-web-interface__scroll mcp__agent-web-interface__click mcp__agent-web-interface__type mcp__agent-web-interface__press mcp__agent-web-interface__select mcp__agent-web-interface__hover mcp__agent-web-interface__get_form mcp__agent-web-interface__get_field mcp__agent-web-interface__list_pages mcp__agent-web-interface__drag
@@ -324,11 +324,11 @@ When this happens:
 ## Example Usage
 
 ```
-/agent-web-interface-guide https://airbnb.com Walk through the search and booking flow for stays in Tokyo
+/agent-web-interface https://airbnb.com Walk through the search and booking flow for stays in Tokyo
 
-/agent-web-interface-guide https://apple.com/store Configure an iPhone and add it to the bag, then summarize the steps
+/agent-web-interface https://apple.com/store Configure an iPhone and add it to the bag, then summarize the steps
 
-/agent-web-interface-guide https://developer.mozilla.org Find the Fetch API docs and note how the search flow behaves
+/agent-web-interface https://developer.mozilla.org Find the Fetch API docs and note how the search flow behaves
 
-/agent-web-interface-guide https://example.com/login Extract the login form selectors and field purposes
+/agent-web-interface https://example.com/login Extract the login form selectors and field purposes
 ```

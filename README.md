@@ -623,7 +623,7 @@ Open https://example.com and summarize the main actions available to a user.
 
 ### Install the agent skill (recommended)
 
-The [`agent-web-interface-guide`](skills/agent-web-interface-guide/SKILL.md) skill teaches the agent how to drive these tools well — structured page snapshots, stable element IDs, form inspection, and reliable Playwright selector capture. Install it with [`npx skills`](https://github.com/vercel-labs/skills):
+The [`agent-web-interface`](skills/agent-web-interface/SKILL.md) skill teaches the agent how to drive these tools well — structured page snapshots, stable element IDs, form inspection, and reliable Playwright selector capture. Install it with [`npx skills`](https://github.com/vercel-labs/skills):
 
 ```bash
 npx skills add lespaceman/agent-web-interface
