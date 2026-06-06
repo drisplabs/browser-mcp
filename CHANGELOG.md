@@ -1,3 +1,10 @@
+## [4.6.1] - 2026-06-06
+
+- Merge pull request #59 from lespaceman/fix/ci-format-and-security-audit
+- fix(ci): format README and resolve security audit failures
+- Merge pull request #58 from lespaceman/docs/improve-readme-positioning
+- docs: improve README positioning and examples
+
 ## [4.6.0] - 2026-03-31
 
 - Redesign browser session management with explicit modes
