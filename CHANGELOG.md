@@ -1,3 +1,5 @@
+# Changelog
+
 ## [4.6.1] - 2026-06-06
 
 - Merge pull request #59 from lespaceman/fix/ci-format-and-security-audit
@@ -7,10 +9,24 @@
 
 ## [4.6.0] - 2026-03-31
 
-- Redesign browser session management with explicit modes
-- Gate bringToFront behind BRING_TO_FRONT env var (default off)
+### Breaking Changes
 
-# Changelog
+- Remove `headless`, `isolated`, `auto_connect` params from `navigate` tool — browser config is now env-var only
+- Remove `setBrowserConfig()`, `canReconfigure()`, `resetBrowser()`, `getBrowserConfig()` from SessionController/ToolContext
+
+### Added
+
+- `AWI_BROWSER_MODE` env var: `user` (connect to running Chrome), `persistent` (dedicated profile), `isolated` (temp profile)
+- `AWI_HEADLESS` env var: run browser headless (for persistent/isolated modes)
+- Auto fallback chain when `AWI_BROWSER_MODE` is unset: user → persistent → isolated
+
+### Changed
+
+- Redesign browser session management with explicit modes
+- Navigate tool simplified to pure navigation (`url`, `page_id` only)
+- Browser config is immutable infrastructure — set once at startup via env vars
+- Navigate no longer needs `SKIP_BROWSER_INIT` exception
+- Gate bringToFront behind BRING_TO_FRONT env var (default off)
 
 ## [4.5.1] - 2026-03-29
 
