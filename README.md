@@ -693,12 +693,12 @@ Browser initialization happens automatically on the first browser tool call.
 
 Set `AWI_BROWSER_MODE` to control how Chrome is started.
 
-| Mode | Behavior | Profile |
-| --- | --- | --- |
-| unset | Auto: try `user`, then `persistent`, then `isolated` | Depends on fallback |
-| `user` | Connect to your running Chrome | Chrome's default profile |
-| `persistent` | Launch Chrome with a dedicated persistent profile | `~/.cache/agent-web-interface/chrome-profile` |
-| `isolated` | Launch Chrome with a temporary clean profile | Deleted on close |
+| Mode         | Behavior                                             | Profile                                       |
+| ------------ | ---------------------------------------------------- | --------------------------------------------- |
+| unset        | Auto: try `user`, then `persistent`, then `isolated` | Depends on fallback                           |
+| `user`       | Connect to your running Chrome                       | Chrome's default profile                      |
+| `persistent` | Launch Chrome with a dedicated persistent profile    | `~/.cache/agent-web-interface/chrome-profile` |
+| `isolated`   | Launch Chrome with a temporary clean profile         | Deleted on close                              |
 
 Examples:
 
@@ -739,10 +739,10 @@ This is useful when an agent needs access to an already authenticated browser se
 
 The server accepts transport-level arguments only. Browser configuration is controlled through environment variables.
 
-| Argument | Description | Default |
-| --- | --- | --- |
+| Argument      | Description                       | Default |
+| ------------- | --------------------------------- | ------- |
 | `--transport` | Transport mode: `stdio` or `http` | `stdio` |
-| `--port` | Port for HTTP transport | `3000` |
+| `--port`      | Port for HTTP transport           | `3000`  |
 
 Examples:
 
@@ -758,20 +758,20 @@ npx agent-web-interface --transport http --port 8080
 
 ## Environment variables
 
-| Variable | Description | Default |
-| --- | --- | --- |
-| `AWI_BROWSER_MODE` | Browser mode: `user`, `persistent`, or `isolated` | unset; auto fallback |
-| `AWI_HEADLESS` | Run browser headless: `true` or `false` | `false` |
-| `AWI_CDP_URL` | Explicit CDP endpoint; overrides browser mode | unset |
-| `AWI_TRIM_REGIONS` | Set to `false` to disable region trimming globally | `true` |
-| `TRANSPORT` | Transport mode override, for example `http` | unset |
-| `HTTP_HOST` | Host for HTTP transport | `127.0.0.1` |
-| `HTTP_PORT` | Port for HTTP transport | `3000` |
-| `LOG_LEVEL` | Logging level | `info` |
-| `CEF_BRIDGE_HOST` | CDP host for CEF bridge connection | `127.0.0.1` |
-| `CEF_BRIDGE_PORT` | CDP port for CEF bridge connection | `9223` |
-| `BRING_TO_FRONT` | Set to `true` to focus the Chrome tab before each action | `false` |
-| `CHROME_PATH` | Path to Chrome executable | unset |
+| Variable           | Description                                              | Default              |
+| ------------------ | -------------------------------------------------------- | -------------------- |
+| `AWI_BROWSER_MODE` | Browser mode: `user`, `persistent`, or `isolated`        | unset; auto fallback |
+| `AWI_HEADLESS`     | Run browser headless: `true` or `false`                  | `false`              |
+| `AWI_CDP_URL`      | Explicit CDP endpoint; overrides browser mode            | unset                |
+| `AWI_TRIM_REGIONS` | Set to `false` to disable region trimming globally       | `true`               |
+| `TRANSPORT`        | Transport mode override, for example `http`              | unset                |
+| `HTTP_HOST`        | Host for HTTP transport                                  | `127.0.0.1`          |
+| `HTTP_PORT`        | Port for HTTP transport                                  | `3000`               |
+| `LOG_LEVEL`        | Logging level                                            | `info`               |
+| `CEF_BRIDGE_HOST`  | CDP host for CEF bridge connection                       | `127.0.0.1`          |
+| `CEF_BRIDGE_PORT`  | CDP port for CEF bridge connection                       | `9223`               |
+| `BRING_TO_FRONT`   | Set to `true` to focus the Chrome tab before each action | `false`              |
+| `CHROME_PATH`      | Path to Chrome executable                                | unset                |
 
 ---
 
