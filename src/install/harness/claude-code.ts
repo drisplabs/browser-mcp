@@ -8,12 +8,15 @@ import type {
   HarnessStatus,
   ServerCommand,
 } from '../harness-adapter.js';
-import { readJsonConfig, mergeAtPath, writeJsonAtomic } from '../config-io.js';
+import { readJsonConfig, mergeAtPath, writeJsonAtomic, writeFileAtomic } from '../config-io.js';
+import { resolveSkill } from '../skill-source.js';
 
 export type CommandRunner = (cmd: string, args: string[]) => Promise<number>;
+export type SkillResolver = () => Promise<{ rawContent: string }>;
 
 export interface ClaudeCodeAdapterDeps {
   runner?: CommandRunner;
+  skillResolver?: SkillResolver;
 }
 
 const SERVER_NAME = 'agent-web-interface';
@@ -53,9 +56,11 @@ export class ClaudeCodeAdapter implements HarnessAdapter {
   readonly serverCommand = SERVER_COMMAND;
 
   private readonly run: CommandRunner;
+  private readonly resolveSkillFn: SkillResolver;
 
   constructor(deps?: ClaudeCodeAdapterDeps) {
     this.run = deps?.runner ?? makeDefaultRunner();
+    this.resolveSkillFn = deps?.skillResolver ?? (() => resolveSkill());
   }
 
   async detect(): Promise<boolean> {
@@ -77,6 +82,7 @@ export class ClaudeCodeAdapter implements HarnessAdapter {
       if (exitCode !== 0) {
         throw new Error(`claude mcp add exited with code ${exitCode}`);
       }
+      await this.placeSkill(cwd, dryRun);
       return {
         changed: true,
         dryRun: false,
@@ -109,6 +115,7 @@ export class ClaudeCodeAdapter implements HarnessAdapter {
     }
 
     const result = await writeJsonAtomic(mcpJsonPath, merged, { dryRun });
+    await this.placeSkill(cwd, dryRun);
     return {
       changed: result.changed,
       dryRun: result.dryRun,
@@ -116,6 +123,16 @@ export class ClaudeCodeAdapter implements HarnessAdapter {
         ? 'Would write .mcp.json (--dry-run)'
         : '✓ Registered in Claude Code via .mcp.json',
     };
+  }
+
+  private async placeSkill(cwd: string, dryRun: boolean): Promise<void> {
+    try {
+      const skill = await this.resolveSkillFn();
+      const skillPath = join(cwd, '.claude', 'skills', SERVER_NAME, 'SKILL.md');
+      await writeFileAtomic(skillPath, skill.rawContent, { dryRun });
+    } catch {
+      // Skill placement is best-effort; never fails install
+    }
   }
 
   async status(opts: StatusOpts): Promise<HarnessStatus> {

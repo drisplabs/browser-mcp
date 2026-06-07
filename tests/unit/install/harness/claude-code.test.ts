@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import {
   ClaudeCodeAdapter,
   type CommandRunner,
+  type SkillResolver,
 } from '../../../../src/install/harness/claude-code.js';
 
 async function makeTmpDir(): Promise<string> {
@@ -153,6 +154,72 @@ describe('ClaudeCodeAdapter.apply()', () => {
     expect(stdoutSpy).not.toHaveBeenCalled();
     stdoutSpy.mockRestore();
     stderrSpy.mockRestore();
+  });
+});
+
+describe('ClaudeCodeAdapter skill placement', () => {
+  const FAKE_SKILL = `---\nname: agent-web-interface\ndescription: Test skill\n---\n\nBody here.\n`;
+  const skillResolver: SkillResolver = () => Promise.resolve({ rawContent: FAKE_SKILL });
+
+  it('places SKILL.md at .claude/skills/agent-web-interface/SKILL.md on claude mcp add success', async () => {
+    const dir = await makeTmpDir();
+    try {
+      const runner: CommandRunner = () => Promise.resolve(0);
+      const adapter = new ClaudeCodeAdapter({ runner, skillResolver });
+
+      await adapter.apply({ scope: 'project', cwd: dir });
+
+      const content = await readFile(
+        join(dir, '.claude', 'skills', 'agent-web-interface', 'SKILL.md'),
+        'utf-8'
+      );
+      expect(content).toBe(FAKE_SKILL);
+    } finally {
+      await cleanup(dir);
+    }
+  });
+
+  it('places SKILL.md on .mcp.json fallback path', async () => {
+    const dir = await makeTmpDir();
+    try {
+      const runner: CommandRunner = () => {
+        const err = new Error('ENOENT') as NodeJS.ErrnoException;
+        err.code = 'ENOENT';
+        return Promise.reject(err);
+      };
+      const adapter = new ClaudeCodeAdapter({ runner, skillResolver });
+
+      await adapter.apply({ scope: 'project', cwd: dir });
+
+      const content = await readFile(
+        join(dir, '.claude', 'skills', 'agent-web-interface', 'SKILL.md'),
+        'utf-8'
+      );
+      expect(content).toContain('name: agent-web-interface');
+    } finally {
+      await cleanup(dir);
+    }
+  });
+
+  it('does not place skill on dry-run', async () => {
+    const dir = await makeTmpDir();
+    try {
+      const runner: CommandRunner = () => {
+        const err = new Error('ENOENT') as NodeJS.ErrnoException;
+        err.code = 'ENOENT';
+        return Promise.reject(err);
+      };
+      const adapter = new ClaudeCodeAdapter({ runner, skillResolver });
+
+      await adapter.apply({ scope: 'project', cwd: dir, dryRun: true });
+
+      const { stat } = await import('node:fs/promises');
+      await expect(
+        stat(join(dir, '.claude', 'skills', 'agent-web-interface', 'SKILL.md'))
+      ).rejects.toThrow();
+    } finally {
+      await cleanup(dir);
+    }
   });
 });
 

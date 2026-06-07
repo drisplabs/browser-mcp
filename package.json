@@ -45,6 +45,7 @@
   "homepage": "https://github.com/lespaceman/agent-web-interface#readme",
   "files": [
     "dist/**/*",
+    "skills/**",
     "README.md",
     "LICENSE"
   ],
