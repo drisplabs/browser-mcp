@@ -11,6 +11,7 @@ export interface ApplyOpts {
   dryRun?: boolean;
   cwd?: string;
   homeDir?: string;
+  resolvedCommand?: ServerCommand;
 }
 
 export interface ApplyResult {

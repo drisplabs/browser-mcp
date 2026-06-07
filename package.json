@@ -50,6 +50,7 @@
     "LICENSE"
   ],
   "dependencies": {
+    "@clack/prompts": "^1.5.1",
     "@modelcontextprotocol/sdk": "^1.25.2",
     "@mozilla/readability": "^0.6.0",
     "chrome-remote-interface": "^0.33.3",

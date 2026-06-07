@@ -67,13 +67,13 @@ export class ClaudeDesktopAdapter implements HarnessAdapter {
   }
 
   async apply(opts: ApplyOpts): Promise<ApplyResult> {
-    const { dryRun = false } = opts;
+    const { dryRun = false, resolvedCommand = SERVER_COMMAND } = opts;
 
     const configPath = getDesktopConfigPath(this.platform, this.homeDir);
     const existing = await readJsonConfig(configPath);
     const { merged, changed } = mergeAtPath(existing, ['mcpServers', SERVER_NAME], {
-      command: SERVER_COMMAND.command,
-      args: SERVER_COMMAND.args,
+      command: resolvedCommand.command,
+      args: resolvedCommand.args,
     });
 
     if (!changed) {

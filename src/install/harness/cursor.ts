@@ -60,13 +60,19 @@ export class CursorAdapter implements HarnessAdapter {
   }
 
   async apply(opts: ApplyOpts): Promise<ApplyResult> {
-    const { scope, dryRun = false, cwd = process.cwd(), homeDir = homedir() } = opts;
+    const {
+      scope,
+      dryRun = false,
+      cwd = process.cwd(),
+      homeDir = homedir(),
+      resolvedCommand = SERVER_COMMAND,
+    } = opts;
 
     const configPath = mcpJsonPath(scope, cwd, homeDir);
     const existing = await readJsonConfig(configPath);
     const { merged, changed } = mergeAtPath(existing, ['mcpServers', SERVER_NAME], {
-      command: SERVER_COMMAND.command,
-      args: SERVER_COMMAND.args,
+      command: resolvedCommand.command,
+      args: resolvedCommand.args,
     });
 
     if (!changed) {

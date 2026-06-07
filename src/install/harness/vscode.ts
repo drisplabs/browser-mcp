@@ -25,12 +25,6 @@ const SERVER_COMMAND: ServerCommand = {
   args: ['-y', 'agent-web-interface@latest'],
 };
 
-const VSCODE_SERVER_ENTRY = {
-  type: 'stdio',
-  command: SERVER_COMMAND.command,
-  args: SERVER_COMMAND.args,
-};
-
 function buildInstructionsContent(body: string): string {
   return `---\napplyTo: "**"\n---\n${body}`;
 }
@@ -59,15 +53,17 @@ export class VSCodeAdapter implements HarnessAdapter {
   }
 
   async apply(opts: ApplyOpts): Promise<ApplyResult> {
-    const { dryRun = false, cwd = process.cwd() } = opts;
+    const { dryRun = false, cwd = process.cwd(), resolvedCommand = SERVER_COMMAND } = opts;
+
+    const serverEntry = {
+      type: 'stdio',
+      command: resolvedCommand.command,
+      args: resolvedCommand.args,
+    };
 
     const configPath = join(cwd, '.vscode', 'mcp.json');
     const existing = await readJsonConfig(configPath);
-    const { merged, changed } = mergeAtPath(
-      existing,
-      ['servers', SERVER_NAME],
-      VSCODE_SERVER_ENTRY
-    );
+    const { merged, changed } = mergeAtPath(existing, ['servers', SERVER_NAME], serverEntry);
 
     if (!changed) {
       return {

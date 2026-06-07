@@ -26,14 +26,6 @@ const SERVER_COMMAND: ServerCommand = {
   args: ['-y', 'agent-web-interface@latest'],
 };
 
-const CLAUDE_MCP_ADD_ARGS = [
-  'mcp',
-  'add',
-  SERVER_NAME,
-  SERVER_COMMAND.command,
-  ...SERVER_COMMAND.args,
-];
-
 function makeDefaultRunner(): CommandRunner {
   return (cmd, args) =>
     new Promise((resolve, reject) => {
@@ -73,12 +65,20 @@ export class ClaudeCodeAdapter implements HarnessAdapter {
   }
 
   async apply(opts: ApplyOpts): Promise<ApplyResult> {
-    const { dryRun = false, cwd = process.cwd() } = opts;
+    const { dryRun = false, cwd = process.cwd(), resolvedCommand = SERVER_COMMAND } = opts;
+
+    const mcpAddArgs = [
+      'mcp',
+      'add',
+      SERVER_NAME,
+      resolvedCommand.command,
+      ...resolvedCommand.args,
+    ];
 
     // Try claude mcp add first
     let claudeAbsent = false;
     try {
-      const exitCode = await this.run('claude', CLAUDE_MCP_ADD_ARGS);
+      const exitCode = await this.run('claude', mcpAddArgs);
       if (exitCode !== 0) {
         throw new Error(`claude mcp add exited with code ${exitCode}`);
       }
@@ -102,8 +102,8 @@ export class ClaudeCodeAdapter implements HarnessAdapter {
     const mcpJsonPath = join(cwd, '.mcp.json');
     const existing = await readJsonConfig(mcpJsonPath);
     const { merged, changed } = mergeAtPath(existing, ['mcpServers', SERVER_NAME], {
-      command: SERVER_COMMAND.command,
-      args: SERVER_COMMAND.args,
+      command: resolvedCommand.command,
+      args: resolvedCommand.args,
     });
 
     if (!changed) {
