@@ -43,5 +43,5 @@ Thumbs.db
 # Worktrees
 .worktrees/
 
-# Local symlink
-agent-web-interface
+# Local symlink (root-level only; must not match skills/agent-web-interface/)
+/agent-web-interface

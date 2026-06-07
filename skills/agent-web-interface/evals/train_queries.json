@@ -1,0 +1,62 @@
+[
+  {
+    "id": "HP1",
+    "query": "open https://news.ycombinator.com and tell me the top 3 story titles right now",
+    "should_trigger": true
+  },
+  {
+    "id": "HP2",
+    "query": "is the cookie banner still covering the signup CTA on acme.com? we shipped a fix about an hour ago — can you check",
+    "should_trigger": true
+  },
+  {
+    "id": "HP4",
+    "query": "confirm the prod homepage at https://app.acme.io still loads after the deploy and the nav actually renders",
+    "should_trigger": true
+  },
+  {
+    "id": "HP6",
+    "query": "walk the add-to-cart then checkout flow on https://shop.demo.io and tell me where it breaks",
+    "should_trigger": true
+  },
+  {
+    "id": "HP8",
+    "query": "explore the filters on airbnb.com and note how the results change when you switch the room type",
+    "should_trigger": true
+  },
+  {
+    "id": "HP9",
+    "query": "log into staging.myapp.dev with the demo creds and see if the dashboard loads",
+    "should_trigger": true
+  },
+  {
+    "id": "HN1",
+    "query": "add a 'Buy now' button next to the existing add-to-cart button in the product page component",
+    "should_trigger": false
+  },
+  {
+    "id": "HN3",
+    "query": "navigate to src/components/Button.tsx and refactor it to use forwardRef",
+    "should_trigger": false
+  },
+  {
+    "id": "HN4",
+    "query": "the dropdown on the settings page renders empty — debug why the options array is undefined",
+    "should_trigger": false
+  },
+  {
+    "id": "HN6",
+    "query": "write a Playwright test that fills the signup form and asserts the success toast appears",
+    "should_trigger": false
+  },
+  {
+    "id": "HN8",
+    "query": "go to line 88 of checkout.ts and explain the discount math",
+    "should_trigger": false
+  },
+  {
+    "id": "HN10",
+    "query": "explain how an HTML form's GET vs POST submission differs",
+    "should_trigger": false
+  }
+]

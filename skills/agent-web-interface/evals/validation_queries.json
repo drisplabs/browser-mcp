@@ -1,0 +1,42 @@
+[
+  {
+    "id": "HP3",
+    "query": "double-check that submitting the contact form on https://example.com actually sends — users report nothing happens",
+    "should_trigger": true
+  },
+  {
+    "id": "HP5",
+    "query": "grab me reliable selectors for the email + password fields and the submit button on https://app.acme.io/login for an e2e test",
+    "should_trigger": true
+  },
+  {
+    "id": "HP7",
+    "query": "what does the date picker on https://booking.example.org actually do if you pick a past date? check it on the site",
+    "should_trigger": true
+  },
+  {
+    "id": "HP10",
+    "query": "screenshot the live pricing page at https://stripe.com/pricing and describe how the monthly/annual toggle behaves",
+    "should_trigger": true
+  },
+  {
+    "id": "HN2",
+    "query": "our login form submits twice on a fast double-click — find and fix the handler in auth.ts",
+    "should_trigger": false
+  },
+  {
+    "id": "HN5",
+    "query": "build a checkout page with a promo-code field and an order summary section",
+    "should_trigger": false
+  },
+  {
+    "id": "HN7",
+    "query": "my colleague sent a screenshot of a crash — here's the image, what's the bug?",
+    "should_trigger": false
+  },
+  {
+    "id": "HN9",
+    "query": "review the PR that adds the multi-step signup wizard",
+    "should_trigger": false
+  }
+]
