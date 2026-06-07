@@ -1,4 +1,4 @@
-import { runClaudeCodeInstall, type CommandRunner } from './harness/claude-code.js';
+import { ClaudeCodeAdapter, type CommandRunner } from './harness/claude-code.js';
 
 export type { CommandRunner };
 
@@ -21,6 +21,7 @@ function parseHarness(argv: string[]): SupportedHarness | undefined {
 
 export async function runInstall(argv: string[], deps?: InstallDeps): Promise<void> {
   const harness = parseHarness(argv);
+  const dryRun = argv.includes('--dry-run');
 
   if (!harness) {
     process.stderr.write(
@@ -31,9 +32,20 @@ export async function runInstall(argv: string[], deps?: InstallDeps): Promise<vo
     return;
   }
 
-  switch (harness) {
-    case 'claude-code':
-      await runClaudeCodeInstall({ runner: deps?.claudeCodeRunner });
-      break;
+  try {
+    let message: string;
+    switch (harness) {
+      case 'claude-code': {
+        const adapter = new ClaudeCodeAdapter({ runner: deps?.claudeCodeRunner });
+        const result = await adapter.apply({ scope: 'project', dryRun });
+        message = result.message;
+        break;
+      }
+    }
+    process.stderr.write(message + '\n');
+  } catch (err) {
+    const msg = (err as Error).message ?? String(err);
+    process.stderr.write(`Error: ${msg}\n`);
+    process.exit(1);
   }
 }
