@@ -1,3 +1,18 @@
+## [Unreleased]
+
+### Added
+
+- `agent-web-interface install` — interactive installer that auto-detects Claude Code, Cursor, VS Code, and Claude Desktop; registers the MCP server and places the agent skill in one step
+- `agent-web-interface doctor` — read-only status command showing per-harness MCP and skill installation state
+- Install flags: `--harness` (id, `all`, or comma-separated), `--scope project|user`, `--global`, `--project`, `--browser-mode`, `--headless`, `--cdp-url`, `--pin`, `--dry-run`, `--yes`
+- Cursor adapter: merges `mcpServers` into `.cursor/mcp.json` and places skill as `.cursor/rules/agent-web-interface.mdc`
+- VS Code adapter: merges into `.vscode/mcp.json` under `servers` key (`type: "stdio"`); places skill as `.github/instructions/agent-web-interface.instructions.md`
+- Claude Desktop adapter: always global, MCP-only (no skill placement), resolves OS-specific config path for macOS, Linux, and Windows
+- `skills-lock.json` SHA-256 hash verification for skill integrity
+- `--help` now documents all install flags and the `doctor` command
+
+---
+
 ## [4.6.2] - 2026-06-07
 
 - refactor: rename skill agent-web-interface-guide -> agent-web-interface
