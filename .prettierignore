@@ -14,3 +14,7 @@ node_modules/
 AGENTS.md
 docs/tooling-plan.md
 docs/engineering-plan.md
+
+# Session trackers and unrelated working docs
+.athena/
+docs/apple-cart-journey-mcp-design.md

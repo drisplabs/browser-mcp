@@ -12,6 +12,7 @@ import { cleanupTempFiles } from './lib/temp-file.js';
 import { VERSION } from './shared/version.js';
 import { SessionRouter } from './gateway/session-router.js';
 import { registerAllTools } from './tools/tool-registration.js';
+import { dispatch } from './cli/dispatch.js';
 
 /**
  * Initialize all services and start the server
@@ -42,6 +43,14 @@ function initializeServer(): { server: BrowserAutomationServer; router: SessionR
  */
 async function main(): Promise<void> {
   try {
+    // Dispatch install/doctor/--help/--version BEFORE touching stdout (JSON-RPC path).
+    const argv = process.argv.slice(2);
+    const dispatched = await dispatch(argv);
+    if (dispatched.handled) {
+      process.exit(0);
+      return;
+    }
+
     // Check for HTTP transport mode before initializing the stdio server.
     // We parse early to detect the transport flag, then delegate to http-entry.
     const transportIdx = process.argv.indexOf('--transport');
