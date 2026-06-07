@@ -609,69 +609,97 @@ Agent Web Interface exposes MCP tools across the main phases of browser use.
 
 ## Quickstart
 
-### Claude Code
+Run the interactive installer — it auto-detects which AI tools you have installed and registers the MCP server and agent skill in one step:
 
 ```bash
-claude mcp add agent-web-interface -- npx agent-web-interface@latest
+npx agent-web-interface install
 ```
 
-Then ask Claude Code to use the browser:
+Then ask your AI to use the browser:
 
 ```text
 Open https://example.com and summarize the main actions available to a user.
 ```
 
-### Install the agent skill (recommended)
+### Target a specific harness
 
-The [`agent-web-interface`](skills/agent-web-interface/SKILL.md) skill teaches the agent how to drive these tools well — structured page snapshots, stable element IDs, form inspection, and reliable Playwright selector capture. Install it with [`npx skills`](https://github.com/vercel-labs/skills):
+```bash
+# Claude Code (also installs the agent skill)
+npx agent-web-interface install --harness claude-code
+
+# Cursor
+npx agent-web-interface install --harness cursor
+
+# VS Code
+npx agent-web-interface install --harness vscode
+
+# Claude Desktop (MCP only — no skill placement)
+npx agent-web-interface install --harness claude-desktop
+
+# Multiple at once
+npx agent-web-interface install --harness cursor,vscode
+
+# All detected harnesses
+npx agent-web-interface install --harness all
+```
+
+### Install flags
+
+| Flag                       | Description                                                                                        |
+| -------------------------- | -------------------------------------------------------------------------------------------------- |
+| `--harness <id\|all\|csv>` | Target harness(es): `claude-code`, `cursor`, `vscode`, `claude-desktop`, `all`, or comma-separated |
+| `--scope project\|user`    | Where to write the config (default: `project`)                                                     |
+| `--global`                 | Alias for `--scope global`                                                                         |
+| `--project`                | Alias for `--scope project`                                                                        |
+| `--browser-mode <mode>`    | Browser mode: `auto` (default), `user`, `persistent`, `isolated`                                   |
+| `--headless`               | Launch Chrome in headless mode                                                                     |
+| `--cdp-url <url>`          | Connect to an existing Chrome DevTools Protocol endpoint                                           |
+| `--pin <version>`          | Register an exact version instead of `@latest`                                                     |
+| `--dry-run`                | Preview changes without writing files                                                              |
+| `--yes`                    | Skip interactive prompts (non-TTY mode)                                                            |
+
+### Check installation status
+
+```bash
+npx agent-web-interface doctor
+```
+
+Prints a per-harness status table showing whether the MCP server is registered and whether the agent skill is installed.
+
+### Skill-only installation (advanced)
+
+The [`agent-web-interface`](skills/agent-web-interface/SKILL.md) skill can also be installed independently — without the MCP server — using [`npx skills`](https://github.com/vercel-labs/skills):
 
 ```bash
 npx skills add lespaceman/agent-web-interface
 ```
 
-This copies **only the skill** into your agent's `skills/` directory — it does not install the MCP server. Run the `claude mcp add agent-web-interface` command above as well so the `mcp__agent-web-interface__*` tools exist for the skill to call.
-
-### Use your existing Chrome session
-
-To reuse bookmarks, extensions, cookies, and logged-in sessions:
-
-```bash
-claude mcp add agent-web-interface \
-  -e AWI_BROWSER_MODE=user \
-  -- npx agent-web-interface@latest
-```
-
-This connects to your running Chrome when remote debugging is enabled.
-
-### Persistent browser profile
-
-To launch Chrome with a dedicated persistent profile:
-
-```bash
-claude mcp add agent-web-interface \
-  -e AWI_BROWSER_MODE=persistent \
-  -- npx agent-web-interface@latest
-```
-
-### Headless isolated browser
-
-```bash
-claude mcp add agent-web-interface \
-  -e AWI_BROWSER_MODE=isolated \
-  -e AWI_HEADLESS=true \
-  -- npx agent-web-interface@latest
-```
+This copies only the skill into your agent's `skills/` directory. You still need to register the MCP server separately (the `install` command above does both). `npx skills` is intentionally kept as a supported alternative for skill-only workflows — see [ADR-0003](docs/adr/0003-keep-npx-skills-alongside-installer.md).
 
 ---
 
-## Claude Desktop / Cursor / VS Code
+## Manual setup (Claude Desktop / Cursor / VS Code)
 
-Add the server to your MCP client configuration:
+If you prefer to edit config files manually, add the server under the appropriate key:
 
 ```json
 {
   "mcpServers": {
     "agent-web-interface": {
+      "command": "npx",
+      "args": ["agent-web-interface@latest"]
+    }
+  }
+}
+```
+
+VS Code uses `servers` instead of `mcpServers` and requires `"type": "stdio"`:
+
+```json
+{
+  "servers": {
+    "agent-web-interface": {
+      "type": "stdio",
       "command": "npx",
       "args": ["agent-web-interface@latest"]
     }
