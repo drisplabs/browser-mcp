@@ -1,4 +1,5 @@
 import { ClaudeCodeAdapter, type CommandRunner } from './harness/claude-code.js';
+import { CursorAdapter } from './harness/cursor.js';
 
 export type { CommandRunner };
 
@@ -6,7 +7,7 @@ export interface InstallDeps {
   claudeCodeRunner?: CommandRunner;
 }
 
-const SUPPORTED_HARNESSES = ['claude-code'] as const;
+const SUPPORTED_HARNESSES = ['claude-code', 'cursor'] as const;
 type SupportedHarness = (typeof SUPPORTED_HARNESSES)[number];
 
 function parseHarness(argv: string[]): SupportedHarness | undefined {
@@ -37,6 +38,12 @@ export async function runInstall(argv: string[], deps?: InstallDeps): Promise<vo
     switch (harness) {
       case 'claude-code': {
         const adapter = new ClaudeCodeAdapter({ runner: deps?.claudeCodeRunner });
+        const result = await adapter.apply({ scope: 'project', dryRun });
+        message = result.message;
+        break;
+      }
+      case 'cursor': {
+        const adapter = new CursorAdapter();
         const result = await adapter.apply({ scope: 'project', dryRun });
         message = result.message;
         break;

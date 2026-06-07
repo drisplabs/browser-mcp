@@ -9,6 +9,7 @@ export interface SkillMeta {
 export interface SkillContent {
   meta: SkillMeta;
   rawContent: string;
+  body: string;
 }
 
 const PACKAGE_NAME = 'agent-web-interface';
@@ -37,6 +38,11 @@ async function findPackageRoot(startDir: string): Promise<string> {
     `Could not find ${PACKAGE_NAME} package root from "${startDir}". ` +
       `Is the package installed correctly?`
   );
+}
+
+function stripFrontmatter(content: string): string {
+  const match = /^---\n[\s\S]*?---\n/.exec(content);
+  return match ? content.slice(match[0].length) : content;
 }
 
 function parseFrontmatter(content: string): SkillMeta {
@@ -71,5 +77,6 @@ export async function resolveSkill(fromDir?: string): Promise<SkillContent> {
   const skillPath = join(pkgRoot, SKILL_REL_PATH);
   const rawContent = await readFile(skillPath, 'utf-8');
   const meta = parseFrontmatter(rawContent);
-  return { meta, rawContent };
+  const body = stripFrontmatter(rawContent);
+  return { meta, rawContent, body };
 }
