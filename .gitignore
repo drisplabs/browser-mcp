@@ -45,3 +45,6 @@ Thumbs.db
 
 # Local symlink (root-level only; must not match skills/agent-web-interface/)
 /agent-web-interface
+
+# Agent skill install dir (regenerable via `npx skills experimental_install`; source is skills/)
+.agents/

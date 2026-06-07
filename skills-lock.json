@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-web-interface": {
+      "source": "lespaceman/agent-web-interface",
+      "sourceType": "github",
+      "skillPath": "skills/agent-web-interface/SKILL.md",
+      "computedHash": "c70186a3141a70770d25966590bf143baf31ac3e059f4a41b58524a8f8a4e1e2"
+    }
+  }
+}
