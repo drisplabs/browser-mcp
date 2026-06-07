@@ -29,7 +29,7 @@ const SERVER_COMMAND: ServerCommand = {
 function makeDefaultRunner(): CommandRunner {
   return (cmd, args) =>
     new Promise((resolve, reject) => {
-      const child = spawn(cmd, args, { stdio: 'inherit' });
+      const child = spawn(cmd, args, { stdio: 'ignore' });
       child.on('close', (code) => resolve(code ?? 0));
       child.on('error', reject);
     });
@@ -67,35 +67,37 @@ export class ClaudeCodeAdapter implements HarnessAdapter {
   async apply(opts: ApplyOpts): Promise<ApplyResult> {
     const { dryRun = false, cwd = process.cwd(), resolvedCommand = SERVER_COMMAND } = opts;
 
+    const scopeFlag = opts.scope === 'user' ? 'user' : 'project';
     const mcpAddArgs = [
       'mcp',
       'add',
+      '-s',
+      scopeFlag,
       SERVER_NAME,
+      '--',
       resolvedCommand.command,
       ...resolvedCommand.args,
     ];
 
-    // Try claude mcp add first
-    let claudeAbsent = false;
-    try {
-      const exitCode = await this.run('claude', mcpAddArgs);
-      if (exitCode !== 0) {
-        throw new Error(`claude mcp add exited with code ${exitCode}`);
+    // Try `claude mcp add`; skip on dry-run (real CLI mutation must not fire).
+    // Fall through to .mcp.json on any failure (e.g. server already registered,
+    // claude CLI absent).
+    if (!dryRun) {
+      try {
+        const exitCode = await this.run('claude', mcpAddArgs);
+        if (exitCode === 0) {
+          await this.placeSkill(cwd, dryRun);
+          return {
+            changed: true,
+            dryRun: false,
+            message: 'Registered via `claude mcp add`',
+          };
+        }
+        // Non-zero exit (e.g. already registered): fall through to .mcp.json
+      } catch (err) {
+        if (!isNotFound(err)) throw err;
+        // ENOENT — claude not installed: fall through to .mcp.json
       }
-      await this.placeSkill(cwd, dryRun);
-      return {
-        changed: true,
-        dryRun: false,
-        message: '✓ Registered in Claude Code via `claude mcp add`',
-      };
-    } catch (err) {
-      if (!isNotFound(err)) throw err;
-      claudeAbsent = true;
-    }
-
-    if (!claudeAbsent) {
-      // unreachable — satisfies type narrowing
-      throw new Error('unexpected state');
     }
 
     // Fallback: write .mcp.json
@@ -107,6 +109,7 @@ export class ClaudeCodeAdapter implements HarnessAdapter {
     });
 
     if (!changed) {
+      await this.placeSkill(cwd, dryRun);
       return {
         changed: false,
         dryRun,
@@ -119,9 +122,7 @@ export class ClaudeCodeAdapter implements HarnessAdapter {
     return {
       changed: result.changed,
       dryRun: result.dryRun,
-      message: dryRun
-        ? 'Would write .mcp.json (--dry-run)'
-        : '✓ Registered in Claude Code via .mcp.json',
+      message: dryRun ? 'Would write .mcp.json (--dry-run)' : 'Registered via .mcp.json',
     };
   }
 

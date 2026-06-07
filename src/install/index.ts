@@ -28,10 +28,31 @@ function printSummaryTable(results: HarnessResult[]): void {
       process.stderr.write(`  ${label}  ✗ ${error}\n`);
     } else if (result) {
       const status = result.dryRun ? `(dry-run) ${result.message}` : result.message;
-      process.stderr.write(`  ${label}  ${status}\n`);
+      const skillNote = !adapter.supportsSkill ? ' (no skill placement)' : '';
+      process.stderr.write(`  ${label}  ${status}${skillNote}\n`);
     }
   }
   process.stderr.write('\n');
+}
+
+async function printClackSummary(results: HarnessResult[]): Promise<boolean> {
+  const { log, outro } = await import('@clack/prompts');
+  for (const { adapter, result, error } of results) {
+    if (error) {
+      log.error(`${adapter.label}: ${error}`);
+    } else if (result) {
+      const msg = result.dryRun ? `(dry-run) ${result.message}` : result.message;
+      const skillNote = !adapter.supportsSkill ? ' · no skill placement' : '';
+      if (result.changed && !result.dryRun) {
+        log.success(`${adapter.label}: ${msg}${skillNote}`);
+      } else {
+        log.info(`${adapter.label}: ${msg}${skillNote}`);
+      }
+    }
+  }
+  const anyFailed = results.some((r) => r.error != null);
+  outro(anyFailed ? 'Done (with errors — see above).' : 'All done!');
+  return anyFailed;
 }
 
 async function applyAdapters(
@@ -108,7 +129,6 @@ export async function runInstall(argv: string[], deps: InstallDeps = {}): Promis
     { ...flags, browserMode: choices.browserMode, scope: choices.scope },
     deps
   );
-  printSummaryTable(results);
-  const anyFailed = results.some((r) => r.error != null);
+  const anyFailed = await printClackSummary(results);
   if (anyFailed) process.exit(1);
 }

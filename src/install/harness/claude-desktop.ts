@@ -91,7 +91,7 @@ export class ClaudeDesktopAdapter implements HarnessAdapter {
       dryRun: writeResult.dryRun,
       message: dryRun
         ? 'Would write claude_desktop_config.json (--dry-run)'
-        : '✓ Registered in Claude Desktop via claude_desktop_config.json\n  Note: skill placement not supported for Claude Desktop',
+        : 'Registered via claude_desktop_config.json',
     };
   }
 
