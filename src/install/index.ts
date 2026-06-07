@@ -1,6 +1,7 @@
 import { ClaudeCodeAdapter, type CommandRunner } from './harness/claude-code.js';
 import { CursorAdapter } from './harness/cursor.js';
 import { VSCodeAdapter } from './harness/vscode.js';
+import { ClaudeDesktopAdapter } from './harness/claude-desktop.js';
 
 export type { CommandRunner };
 
@@ -8,7 +9,7 @@ export interface InstallDeps {
   claudeCodeRunner?: CommandRunner;
 }
 
-const SUPPORTED_HARNESSES = ['claude-code', 'cursor', 'vscode'] as const;
+const SUPPORTED_HARNESSES = ['claude-code', 'cursor', 'vscode', 'claude-desktop'] as const;
 type SupportedHarness = (typeof SUPPORTED_HARNESSES)[number];
 
 function parseHarness(argv: string[]): SupportedHarness | undefined {
@@ -52,6 +53,12 @@ export async function runInstall(argv: string[], deps?: InstallDeps): Promise<vo
       case 'vscode': {
         const adapter = new VSCodeAdapter();
         const result = await adapter.apply({ scope: 'project', dryRun });
+        message = result.message;
+        break;
+      }
+      case 'claude-desktop': {
+        const adapter = new ClaudeDesktopAdapter();
+        const result = await adapter.apply({ scope: 'global', dryRun });
         message = result.message;
         break;
       }
