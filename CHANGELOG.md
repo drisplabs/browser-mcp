@@ -1,3 +1,12 @@
+## [4.6.2] - 2026-06-07
+
+- refactor: rename skill agent-web-interface-guide -> agent-web-interface
+- feat: add agent-web-interface-guide skill for npx skills install
+- docs: backfill detailed 4.6.0 changelog for browser-mode refactor
+- Merge pull request #60 from lespaceman/feat/fingerprint-stealth
+- fix(browser): address review on stealth
+- feat(browser): add optional fingerprint-only stealth
+
 # Changelog
 
 ## [4.6.1] - 2026-06-06
