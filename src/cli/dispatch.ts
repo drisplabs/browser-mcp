@@ -1,5 +1,6 @@
 import { VERSION } from '../shared/version.js';
 import { runInstall, type InstallDeps } from '../install/index.js';
+import { runDoctor } from '../install/doctor.js';
 
 export interface DispatchDeps extends InstallDeps {
   runInstall?: (argv: string[]) => Promise<void>;
@@ -37,6 +38,11 @@ export async function dispatch(argv: string[], deps?: DispatchDeps): Promise<Dis
   if (verb === 'install') {
     const installFn = deps?.runInstall ?? ((a: string[]) => runInstall(a, deps));
     await installFn(argv);
+    return { handled: true };
+  }
+
+  if (verb === 'doctor') {
+    await runDoctor();
     return { handled: true };
   }
 
