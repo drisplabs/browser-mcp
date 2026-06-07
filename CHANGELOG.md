@@ -1,3 +1,28 @@
+## [4.6.3] - 2026-06-07
+
+- docs: update README quickstart to lead with install command + CHANGELOG (#83)
+- Merge pull request #82 from lespaceman/feat/doctor-command
+- feat: add doctor command — read-only per-harness status (#70)
+- Merge pull request #81 from lespaceman/feat/interactive-install
+- feat: interactive install flow + flag surface + adapter registry (#69)
+- Merge pull request #80 from lespaceman/feat/claude-desktop-adapter
+- feat: add ClaudeDesktopAdapter (global, OS-specific paths, MCP-only) (#68)
+- Merge pull request #79 from lespaceman/feat/vscode-adapter
+- feat: add VSCodeAdapter for servers/type:stdio MCP + instructions (#72)
+- Merge pull request #78 from lespaceman/feat/cursor-adapter
+- feat: add CursorAdapter for MCP + .mdc rule placement (#71)
+- Merge pull request #77 from lespaceman/feat/skill-packaging
+- feat(#67): portable skill packaging + Claude Code skill placement
+- Merge pull request #76 from lespaceman/feat/config-io
+- feat(#66): config-io + HarnessAdapter interface + Claude Code .mcp.json fallback
+- Merge pull request #75 from lespaceman/feat/install-dispatch
+- feat(#64): install dispatch + Claude Code MCP registration
+- Merge pull request #74 from lespaceman/docs/install-design-docs
+- docs: add install design docs (ADR-0002, ADR-0003, CONTEXT.md glossary)
+- docs: add project context, ADR-0001, captcha findings, and non-DOM interaction PRD (#63)
+- chore(skills): commit portable skills-lock.json, ignore .agents install dir (#62)
+- chore(skill): optimize agent-web-interface description for triggering (#61)
+
 ## [Unreleased]
 
 ### Added
