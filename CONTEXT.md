@@ -1,8 +1,30 @@
 # Agent Web Interface
 
-An MCP server for AI-driven browser automation. It produces semantic page snapshots and exposes tools for an AI agent to observe and act on web pages. This glossary covers the language of the **non-DOM interaction channel** — capabilities for everything that happens outside the page DOM.
+An MCP server for AI-driven browser automation. It produces semantic page snapshots and exposes tools for an AI agent to observe and act on web pages.
 
 ## Language
+
+### Setup & distribution
+
+**Harness**:
+An AI client that consumes the MCP server and/or the skill. v1 targets four: Claude Code, Cursor, VS Code, and Claude Desktop. Each has its own config location and guidance format.
+_Avoid_: client, IDE, editor (too narrow)
+
+**Install**:
+The single setup command (`agent-web-interface install`) that, for each chosen harness, performs MCP registration and places the skill.
+
+**MCP registration**:
+Adding the agent-web-interface server to a harness's configuration so its `mcp__agent-web-interface__*` tools become available.
+
+**Skill**:
+A single portable guidance document (canonical `SKILL.md` body, **no tool-gating**) that teaches an agent to drive the tools well. Delivered to every harness, wrapped for that harness's native format and location.
+_Avoid_: rule, instructions (those are per-harness wrappings of the skill)
+
+**Install scope**:
+Where setup is written: **project** (the current repo) or **user/global** (home-dir configs). Claude Desktop is always global — it has no project concept.
+
+**Detection**:
+Whether a harness is present on the machine, used to pre-select it for confirmation.
 
 ### Non-DOM interaction channel
 
