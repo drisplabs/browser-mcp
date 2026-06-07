@@ -1,4 +1,4 @@
-import { readFile, writeFile, rename, copyFile, stat } from 'node:fs/promises';
+import { readFile, writeFile, rename, copyFile, stat, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 export interface MergeResult {
@@ -44,16 +44,17 @@ export function mergeAtPath(
   return { merged: { ...existing, [head]: mergedChild }, changed: true };
 }
 
-export async function writeJsonAtomic(
+export async function writeFileAtomic(
   path: string,
-  data: Record<string, unknown>,
+  content: string,
   opts?: { dryRun?: boolean }
 ): Promise<WriteResult> {
   if (opts?.dryRun) {
     return { changed: true, dryRun: true };
   }
 
-  const content = JSON.stringify(data, null, 2) + '\n';
+  const dir = dirname(path);
+  await mkdir(dir, { recursive: true });
 
   // Backup pre-existing file
   try {
@@ -64,7 +65,6 @@ export async function writeJsonAtomic(
   }
 
   // Atomic write: temp file → rename
-  const dir = dirname(path);
   const tmp = join(
     dir,
     `.awi-tmp-${Date.now()}-${Math.floor(Math.random() * 0xffffff).toString(16)}`
@@ -73,4 +73,12 @@ export async function writeJsonAtomic(
   await rename(tmp, path);
 
   return { changed: true, dryRun: false };
+}
+
+export async function writeJsonAtomic(
+  path: string,
+  data: Record<string, unknown>,
+  opts?: { dryRun?: boolean }
+): Promise<WriteResult> {
+  return writeFileAtomic(path, JSON.stringify(data, null, 2) + '\n', opts);
 }
