@@ -140,17 +140,25 @@ describe('ClaudeCodeAdapter.apply()', () => {
     }
   });
 
-  it('dry-run does not invoke claude mcp add', async () => {
-    const calls: [string, string[]][] = [];
-    const runner: CommandRunner = (cmd, args) => {
-      calls.push([cmd, args]);
-      return Promise.resolve(0);
-    };
-    const adapter = new ClaudeCodeAdapter({ runner });
+  it('dry-run does not invoke claude mcp add and does not write .mcp.json', async () => {
+    const dir = await makeTmpDir();
+    try {
+      const calls: [string, string[]][] = [];
+      const runner: CommandRunner = (cmd, args) => {
+        calls.push([cmd, args]);
+        return Promise.resolve(0);
+      };
+      const adapter = new ClaudeCodeAdapter({ runner });
 
-    await adapter.apply({ scope: 'project', dryRun: true });
+      const result = await adapter.apply({ scope: 'project', cwd: dir, dryRun: true });
 
-    expect(calls).toHaveLength(0);
+      expect(calls).toHaveLength(0);
+      expect(result.dryRun).toBe(true);
+      const { stat } = await import('node:fs/promises');
+      await expect(stat(join(dir, '.mcp.json'))).rejects.toThrow();
+    } finally {
+      await cleanup(dir);
+    }
   });
 
   it('fallback respects --dry-run: writes nothing', async () => {
