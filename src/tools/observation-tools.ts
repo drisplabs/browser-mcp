@@ -28,6 +28,8 @@ import {
 } from './response-builder.js';
 import { prepareActionContext } from './action-context.js';
 import type { ToolContext } from './tool-context.types.js';
+import { getSurface, isNonDomEid } from '../non-dom/surface-store.js';
+import { renderNonDomSurface, renderNonDomControlDetails } from '../non-dom/surface-xml.js';
 
 /**
  * Capture a fresh snapshot of the current page.
@@ -43,6 +45,17 @@ export async function captureSnapshot(
 
   let handle = ctx.resolveExistingPage(input.page_id);
   const page_id = handle.page_id;
+
+  // When a JS dialog is active, the renderer is blocked — any Runtime.evaluate
+  // (used by DOM stabilization and snapshot compilation) would hang. Return the
+  // stored pre-dialog snapshot with the current surface descriptor instead.
+  const activeSurface = getSurface(handle.page);
+  if (activeSurface?.kind === 'dialog') {
+    const storedSnapshot = ctx.getSnapshotStore().getByPageId(page_id);
+    const stateManager = ctx.getStateManager(page_id);
+    const stateXml = storedSnapshot ? stateManager.generateResponse(storedSnapshot) : '';
+    return stateXml + '\n' + renderNonDomSurface(activeSurface);
+  }
 
   // Capture any accumulated observations (no action window)
   const observations = await ctx
@@ -65,9 +78,16 @@ export async function captureSnapshot(
 
   ctx.getSnapshotStore().store(page_id, snapshot);
 
-  // Return XML state response directly (trimmed for observation snapshots)
+  // Return XML state response (trimmed for observation snapshots)
   const stateManager = ctx.getStateManager(page_id);
-  return stateManager.generateResponse(snapshot, { trimRegions: true });
+  let stateXml = stateManager.generateResponse(snapshot, { trimRegions: true });
+
+  // Append non-DOM surface XML when a file-picker or other blocking surface is active
+  if (activeSurface) {
+    stateXml += '\n' + renderNonDomSurface(activeSurface);
+  }
+
+  return stateXml;
 }
 
 /**
@@ -189,6 +209,37 @@ export function findElements(
     return match;
   });
 
+  // Append synthetic nd-* controls from the active non-DOM surface.
+  // These are always prepended so the agent sees the blocking surface first.
+  const activeSurface = getSurface(handle.page);
+  if (activeSurface) {
+    const labelFilter = input.label?.toLowerCase();
+    const kindFilter = input.kind;
+
+    const surfaceMatches: FindElementsMatch[] = activeSurface.controls
+      .filter((ctrl) => {
+        if (labelFilter && !ctrl.label.toLowerCase().includes(labelFilter)) return false;
+        if (kindFilter) {
+          // Map schema kind 'textbox' to surface kind 'input'
+          const mappedKind = kindFilter === 'textbox' ? 'input' : kindFilter;
+          if (ctrl.kind !== mappedKind) return false;
+        }
+        return true;
+      })
+      .map(
+        (ctrl): FindElementsMatch => ({
+          eid: ctrl.eid,
+          kind: ctrl.kind,
+          label: ctrl.label,
+          selector: '',
+          region: 'non_dom',
+          ...(ctrl.value !== undefined && { attributes: { value: ctrl.value } }),
+        })
+      );
+
+    matches.unshift(...surfaceMatches);
+  }
+
   return buildFindElementsResponse(page_id, snap.snapshot_id, matches);
 }
 
@@ -206,6 +257,17 @@ export function getNodeDetails(
 
   const handle = ctx.resolveExistingPage(input.page_id);
   const page_id = handle.page_id;
+
+  // Route synthetic nd-* EIDs to the active non-DOM surface
+  if (isNonDomEid(input.eid)) {
+    const surface = getSurface(handle.page);
+    if (!surface) {
+      throw new Error(
+        `No active non-DOM surface. Synthetic control "${input.eid}" is not available.`
+      );
+    }
+    return renderNonDomControlDetails(input.eid, surface);
+  }
 
   const snap = ctx.getSnapshotStore().getByPageId(page_id);
   if (!snap) {

@@ -301,6 +301,97 @@ When this happens:
 2. Re-run `find` or `get_form` from the latest state
 3. Continue only with fresh `eid`s
 
+## Non-DOM Surfaces
+
+Certain browser interactions open surfaces that live outside the page DOM — JavaScript dialogs (`alert`, `confirm`, `prompt`), and OS-native file pickers triggered by `<input type="file">`. These are exposed as **blocking non-DOM surfaces** directly in the state response, using the same `eid`-based model as normal page elements.
+
+### What it looks like
+
+When a non-DOM surface is active, the state response gains two extra elements after `</state>`:
+
+```xml
+<!-- JavaScript dialog -->
+<non_dom kind="dialog" modal="true" dialog_type="confirm" message="Delete this item?">
+  <ctrl eid="nd-dialog-ok"      kind="button" label="Accept" />
+  <ctrl eid="nd-dialog-dismiss" kind="button" label="Dismiss" />
+</non_dom>
+<dom_blocked reason="dialog" />
+
+<!-- File picker (from clicking an input[type=file]) -->
+<non_dom kind="file-picker" modal="true" mode="selectSingle">
+  <ctrl eid="nd-picker-path"   kind="input"  label="File path" placeholder="Absolute path on browser host..." />
+  <ctrl eid="nd-picker-choose" kind="button" label="Choose" />
+  <ctrl eid="nd-picker-cancel" kind="button" label="Cancel" />
+</non_dom>
+<dom_blocked reason="file-picker" />
+```
+
+`<dom_blocked>` means normal DOM interaction is suspended until the surface is resolved.
+
+### Synthetic EIDs (`nd-*`)
+
+Non-DOM controls use a synthetic `nd-` prefix in the same `eid` namespace as DOM elements. Pass them directly to `click` and `type` — no special tool needed.
+
+| EID                 | Kind   | When present                    | Action                              |
+| ------------------- | ------ | ------------------------------- | ----------------------------------- |
+| `nd-dialog-ok`      | button | alert / confirm / prompt        | Accept (OK / Submit / Stay on Page) |
+| `nd-dialog-dismiss` | button | confirm / prompt / beforeunload | Dismiss (Cancel / Leave)            |
+| `nd-dialog-input`   | input  | prompt dialog only              | The text field for prompt response  |
+| `nd-picker-path`    | input  | file picker                     | Absolute browser-host file path(s)  |
+| `nd-picker-choose`  | button | file picker                     | Confirm the typed path and upload   |
+| `nd-picker-cancel`  | button | file picker                     | Cancel without uploading            |
+
+### Dialog workflow
+
+```
+click → <non_dom kind="dialog"> appears
+
+# For alert:
+click(eid="nd-dialog-ok")
+
+# For confirm:
+click(eid="nd-dialog-ok")      # Accept
+click(eid="nd-dialog-dismiss") # Dismiss
+
+# For prompt:
+type(eid="nd-dialog-input", text="my answer")
+click(eid="nd-dialog-ok")      # Submit
+```
+
+After resolving a dialog, the page resumes normally and a fresh state is returned.
+
+### File picker workflow
+
+```
+click(eid="<file-input-eid>")
+→ <non_dom kind="file-picker"> appears
+
+type(eid="nd-picker-path", text="/absolute/path/to/file.pdf")
+click(eid="nd-picker-choose")
+```
+
+For multi-file pickers (`mode="selectMultiple"`), type one absolute path per line:
+
+```
+type(eid="nd-picker-path", text="/path/to/a.pdf\n/path/to/b.pdf")
+click(eid="nd-picker-choose")
+```
+
+The path must be absolute and accessible on the browser host (the machine running Chrome). After choosing, the page receives the file and the state returns to normal DOM interaction.
+
+### Using `find` and `get_element` with non-DOM surfaces
+
+`find` returns nd-\* controls alongside DOM matches (they appear first). Use them the same way:
+
+```
+find(kind="button")  → includes nd-dialog-ok, nd-dialog-dismiss
+get_element(eid="nd-dialog-ok")  → shows synthetic control details
+```
+
+### `snapshot` during a dialog
+
+When a JavaScript dialog is blocking the page, calling `snapshot` returns the pre-dialog page state with the `<non_dom>` block appended, so you can orient yourself without hanging.
+
 ## Canvas Interactions
 
 `<canvas>` elements render pixels, not DOM nodes — standard selectors don't work inside them. Use these tools for canvas-based UIs (drawing apps, games, visualizations):

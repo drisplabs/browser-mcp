@@ -766,3 +766,140 @@ export const SearchNetworkCallsOutputSchema = z.string();
 
 export type SearchNetworkCallsInput = z.infer<typeof SearchNetworkCallsInputSchema>;
 export type SearchNetworkCallsOutput = z.infer<typeof SearchNetworkCallsOutputSchema>;
+
+// ============================================================================
+// upload - Upload files to a file input
+// ============================================================================
+
+export const UploadInputSchemaBase = z.object({
+  /** Stable element ID of the file input, label, button, or upload container */
+  eid: z
+    .string()
+    .describe(
+      'Element ID of the file input, associated label, styled upload button, or dropzone container. ' +
+        'The server resolves the real <input type="file"> automatically.'
+    ),
+  /** Absolute paths to files on the browser host */
+  files: z
+    .array(z.string().min(1))
+    .min(1)
+    .describe(
+      'Absolute paths to files on the host where Chrome runs. ' +
+        'Files must exist at these paths on the browser host. ' +
+        'For remote/containerized Chrome, stage files inside the container first.'
+    ),
+  /** Page ID. If omitted, operates on the most recently used page */
+  page_id: z.string().optional(),
+});
+
+export const UploadInputSchema = UploadInputSchemaBase;
+
+export const UploadOutputSchema = z.string();
+
+export type UploadInput = z.infer<typeof UploadInputSchema>;
+export type UploadOutput = z.infer<typeof UploadOutputSchema>;
+
+// ============================================================================
+// handle_dialog - Resolve a pending JavaScript dialog
+// ============================================================================
+
+export const HandleDialogInputSchemaBase = z.object({
+  /** Whether to accept (OK/Yes) or dismiss (Cancel/No) the dialog */
+  action: z
+    .enum(['accept', 'dismiss'])
+    .describe(
+      '"accept" presses OK/Yes; "dismiss" presses Cancel/No. ' +
+        'For beforeunload dialogs, "accept" stays on page and "dismiss" navigates away.'
+    ),
+  /** Text to supply for prompt dialogs (ignored for alert/confirm/beforeunload) */
+  prompt_text: z
+    .string()
+    .optional()
+    .describe('Text to enter when resolving a JavaScript prompt() dialog.'),
+  /** Page ID. If omitted, operates on the most recently used page */
+  page_id: z.string().optional(),
+});
+
+export const HandleDialogInputSchema = HandleDialogInputSchemaBase;
+
+export const HandleDialogOutputSchema = z.string();
+
+export type HandleDialogInput = z.infer<typeof HandleDialogInputSchema>;
+export type HandleDialogOutput = z.infer<typeof HandleDialogOutputSchema>;
+
+// ============================================================================
+// grant_permission - Grant or deny browser permissions for the active origin
+// ============================================================================
+
+export const GrantPermissionInputSchemaBase = z.object({
+  /** Permissions to configure */
+  permissions: z
+    .array(
+      z.enum([
+        'geolocation',
+        'notifications',
+        'camera',
+        'microphone',
+        'audioCapture',
+        'videoCapture',
+        'clipboardRead',
+        'clipboardWrite',
+        'clipboardSanitizedWrite',
+        'accessibilityEvents',
+        'backgroundSync',
+        'backgroundFetch',
+        'payment',
+        'flash',
+        'midi',
+        'midiSysex',
+        'nfc',
+        'sensors',
+        'idleDetection',
+        'wakeLock',
+        'storageAccess',
+      ])
+    )
+    .min(1)
+    .describe('Browser permissions to grant or deny.'),
+  /** Whether to grant (true) or deny (false) the permissions */
+  granted: z.boolean().describe('Set to true to grant permissions, false to deny them.'),
+  /** Origin to apply permissions to (e.g. "https://example.com"). Defaults to current page origin. */
+  origin: z
+    .string()
+    .optional()
+    .describe(
+      'Origin to apply permissions for (e.g. "https://example.com"). ' +
+        'Defaults to the current page origin if omitted.'
+    ),
+  /** Page ID. If omitted, operates on the most recently used page */
+  page_id: z.string().optional(),
+});
+
+export const GrantPermissionInputSchema = GrantPermissionInputSchemaBase;
+
+export const GrantPermissionOutputSchema = z.string();
+
+export type GrantPermissionInput = z.infer<typeof GrantPermissionInputSchema>;
+export type GrantPermissionOutput = z.infer<typeof GrantPermissionOutputSchema>;
+
+// ============================================================================
+// set_download_behavior - Configure download routing for the session
+// ============================================================================
+
+export const SetDownloadBehaviorInputSchemaBase = z.object({
+  /** Absolute path to the directory where downloads should be saved */
+  download_path: z
+    .string()
+    .describe(
+      'Absolute path to the directory where downloads should be saved on the browser host.'
+    ),
+  /** Page ID. If omitted, operates on the most recently used page */
+  page_id: z.string().optional(),
+});
+
+export const SetDownloadBehaviorInputSchema = SetDownloadBehaviorInputSchemaBase;
+
+export const SetDownloadBehaviorOutputSchema = z.string();
+
+export type SetDownloadBehaviorInput = z.infer<typeof SetDownloadBehaviorInputSchema>;
+export type SetDownloadBehaviorOutput = z.infer<typeof SetDownloadBehaviorOutputSchema>;

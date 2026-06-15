@@ -109,6 +109,78 @@ export interface CdpMethodMap {
     params: Protocol.Input.InsertTextRequest;
     result: void;
   };
+
+  // DOM file input methods
+  'DOM.setFileInputFiles': {
+    params: Protocol.DOM.SetFileInputFilesRequest;
+    result: void;
+  };
+
+  // Page dialog and file chooser methods
+  'Page.handleJavaScriptDialog': {
+    params: Protocol.Page.HandleJavaScriptDialogRequest;
+    result: void;
+  };
+  'Page.setInterceptFileChooserDialog': {
+    params: { enabled: boolean };
+    result: void;
+  };
+  'Page.printToPDF': {
+    params: Protocol.Page.PrintToPDFRequest;
+    result: Protocol.Page.PrintToPDFResponse;
+  };
+
+  // Browser permission and download methods
+  'Browser.grantPermissions': {
+    params: Protocol.Browser.GrantPermissionsRequest;
+    result: void;
+  };
+  'Browser.setPermission': {
+    params: Protocol.Browser.SetPermissionRequest;
+    result: void;
+  };
+  'Browser.setDownloadBehavior': {
+    params: {
+      behavior: 'deny' | 'allow' | 'allowAndName' | 'default';
+      downloadPath?: string;
+      eventsEnabled?: boolean;
+    };
+    result: void;
+  };
+
+  // Fetch domain for auth interception
+  'Fetch.enable': {
+    params: {
+      patterns?: { urlPattern?: string; resourceType?: string; requestStage?: string }[];
+      handleAuthRequests?: boolean;
+    };
+    result: void;
+  };
+  'Fetch.disable': {
+    params: undefined;
+    result: void;
+  };
+  'Fetch.continueRequest': {
+    params: {
+      requestId: string;
+      url?: string;
+      method?: string;
+      postData?: string;
+      headers?: { name: string; value: string }[];
+    };
+    result: void;
+  };
+  'Fetch.continueWithAuth': {
+    params: {
+      requestId: string;
+      authChallengeResponse: {
+        response: 'Default' | 'CancelAuth' | 'ProvideCredentials';
+        username?: string;
+        password?: string;
+      };
+    };
+    result: void;
+  };
 }
 
 /**
@@ -124,6 +196,14 @@ export interface CdpEventMap {
   'DOM.childNodeRemoved': Protocol.DOM.ChildNodeRemovedEvent;
   'Network.requestWillBeSent': Protocol.Network.RequestWillBeSentEvent;
   'Network.responseReceived': Protocol.Network.ResponseReceivedEvent;
+  // Non-DOM interaction events
+  'Page.javascriptDialogOpening': Protocol.Page.JavascriptDialogOpeningEvent;
+  'Page.javascriptDialogClosed': Protocol.Page.JavascriptDialogClosedEvent;
+  'Page.fileChooserOpened': Protocol.Page.FileChooserOpenedEvent;
+  'Browser.downloadWillBegin': Protocol.Browser.DownloadWillBeginEvent;
+  'Browser.downloadProgress': Protocol.Browser.DownloadProgressEvent;
+  'Fetch.authRequired': Protocol.Fetch.AuthRequiredEvent;
+  'Fetch.requestPaused': Protocol.Fetch.RequestPausedEvent;
 }
 
 /**
