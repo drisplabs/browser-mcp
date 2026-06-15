@@ -34,7 +34,10 @@ describe('ClaudeCodeAdapter.apply()', () => {
     expect(args).toEqual([
       'mcp',
       'add',
+      '-s',
+      'project',
       'agent-web-interface',
+      '--',
       'npx',
       '-y',
       'agent-web-interface@latest',
@@ -43,11 +46,42 @@ describe('ClaudeCodeAdapter.apply()', () => {
     stderrSpy.mockRestore();
   });
 
-  it('throws when claude CLI returns non-zero exit code', async () => {
-    const runner: CommandRunner = () => Promise.resolve(2);
-    const adapter = new ClaudeCodeAdapter({ runner });
+  it('falls back to .mcp.json when claude CLI returns non-zero exit code', async () => {
+    const dir = await makeTmpDir();
+    try {
+      const runner: CommandRunner = () => Promise.resolve(1);
+      const adapter = new ClaudeCodeAdapter({ runner });
 
-    await expect(adapter.apply({ scope: 'project' })).rejects.toThrow(/exit(ed)? with code 2/i);
+      const result = await adapter.apply({ scope: 'project', cwd: dir });
+
+      expect(result.changed).toBe(true);
+      const mcpJson = JSON.parse(await readFile(join(dir, '.mcp.json'), 'utf-8')) as {
+        mcpServers: Record<string, { command: string; args: string[] }>;
+      };
+      expect(mcpJson.mcpServers['agent-web-interface']).toEqual({
+        command: 'npx',
+        args: ['-y', 'agent-web-interface@latest'],
+      });
+    } finally {
+      await cleanup(dir);
+    }
+  });
+
+  it('does not fall back to project .mcp.json when user-scope claude mcp add fails', async () => {
+    const dir = await makeTmpDir();
+    try {
+      const runner: CommandRunner = () => Promise.resolve(1);
+      const adapter = new ClaudeCodeAdapter({ runner });
+
+      await expect(adapter.apply({ scope: 'user', cwd: dir })).rejects.toThrow(
+        /claude mcp add exited with code 1/i
+      );
+
+      const { stat } = await import('node:fs/promises');
+      await expect(stat(join(dir, '.mcp.json'))).rejects.toThrow();
+    } finally {
+      await cleanup(dir);
+    }
   });
 
   it('falls back to .mcp.json when claude CLI is not found (ENOENT)', async () => {
@@ -123,6 +157,27 @@ describe('ClaudeCodeAdapter.apply()', () => {
     }
   });
 
+  it('dry-run does not invoke claude mcp add and does not write .mcp.json', async () => {
+    const dir = await makeTmpDir();
+    try {
+      const calls: [string, string[]][] = [];
+      const runner: CommandRunner = (cmd, args) => {
+        calls.push([cmd, args]);
+        return Promise.resolve(0);
+      };
+      const adapter = new ClaudeCodeAdapter({ runner });
+
+      const result = await adapter.apply({ scope: 'project', cwd: dir, dryRun: true });
+
+      expect(calls).toHaveLength(0);
+      expect(result.dryRun).toBe(true);
+      const { stat } = await import('node:fs/promises');
+      await expect(stat(join(dir, '.mcp.json'))).rejects.toThrow();
+    } finally {
+      await cleanup(dir);
+    }
+  });
+
   it('fallback respects --dry-run: writes nothing', async () => {
     const dir = await makeTmpDir();
     try {
@@ -174,6 +229,57 @@ describe('ClaudeCodeAdapter skill placement', () => {
         'utf-8'
       );
       expect(content).toBe(FAKE_SKILL);
+    } finally {
+      await cleanup(dir);
+    }
+  });
+
+  it('places SKILL.md even when .mcp.json is already configured (repair path)', async () => {
+    const dir = await makeTmpDir();
+    try {
+      const runner: CommandRunner = () => {
+        const err = new Error('ENOENT') as NodeJS.ErrnoException;
+        err.code = 'ENOENT';
+        return Promise.reject(err);
+      };
+      const adapter = new ClaudeCodeAdapter({ runner, skillResolver });
+
+      // First apply writes .mcp.json + skill
+      await adapter.apply({ scope: 'project', cwd: dir });
+      // Delete skill to simulate partial prior install
+      const { rm } = await import('node:fs/promises');
+      await rm(join(dir, '.claude', 'skills', 'agent-web-interface', 'SKILL.md'));
+
+      // Second apply: .mcp.json unchanged but skill should be re-placed and reported.
+      const second = await adapter.apply({ scope: 'project', cwd: dir });
+      expect(second.changed).toBe(true);
+      expect(second.message).toContain('repaired Claude Code skill');
+
+      const content = await readFile(
+        join(dir, '.claude', 'skills', 'agent-web-interface', 'SKILL.md'),
+        'utf-8'
+      );
+      expect(content).toBe(FAKE_SKILL);
+    } finally {
+      await cleanup(dir);
+    }
+  });
+
+  it('does not report a change when .mcp.json and SKILL.md are both current', async () => {
+    const dir = await makeTmpDir();
+    try {
+      const runner: CommandRunner = () => {
+        const err = new Error('ENOENT') as NodeJS.ErrnoException;
+        err.code = 'ENOENT';
+        return Promise.reject(err);
+      };
+      const adapter = new ClaudeCodeAdapter({ runner, skillResolver });
+
+      await adapter.apply({ scope: 'project', cwd: dir });
+      const second = await adapter.apply({ scope: 'project', cwd: dir });
+
+      expect(second.changed).toBe(false);
+      expect(second.message).toContain('no changes needed');
     } finally {
       await cleanup(dir);
     }
