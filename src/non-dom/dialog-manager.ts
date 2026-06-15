@@ -54,6 +54,7 @@ export class DialogManager {
   private _fileChooser: FileChooserState = { opened: false, timestamp: 0 };
   private _cdp: CdpClient | null = null;
   private _dialogHandler: CdpEventHandler | null = null;
+  private _dialogClosedHandler: CdpEventHandler | null = null;
   private _fileChooserHandler: CdpEventHandler | null = null;
 
   /**
@@ -76,10 +77,11 @@ export class DialogManager {
     };
     cdp.on('Page.javascriptDialogOpening', this._dialogHandler);
 
-    // Clear pending dialog when it closes
-    cdp.on('Page.javascriptDialogClosed', () => {
+    // Clear pending dialog when it closes (stored so detach() can remove it)
+    this._dialogClosedHandler = () => {
       this._pendingDialog = null;
-    });
+    };
+    cdp.on('Page.javascriptDialogClosed', this._dialogClosedHandler);
 
     // Subscribe to file chooser interception events
     this._fileChooserHandler = (params: Record<string, unknown>) => {
@@ -107,11 +109,15 @@ export class DialogManager {
     if (this._cdp && this._dialogHandler) {
       this._cdp.off('Page.javascriptDialogOpening', this._dialogHandler);
     }
+    if (this._cdp && this._dialogClosedHandler) {
+      this._cdp.off('Page.javascriptDialogClosed', this._dialogClosedHandler);
+    }
     if (this._cdp && this._fileChooserHandler) {
       this._cdp.off('Page.fileChooserOpened', this._fileChooserHandler);
     }
     this._cdp = null;
     this._dialogHandler = null;
+    this._dialogClosedHandler = null;
     this._fileChooserHandler = null;
   }
 
@@ -131,10 +137,22 @@ export class DialogManager {
     if (!this._cdp) {
       throw new Error('DialogManager is not attached to a CDP session.');
     }
-    await this._cdp.send('Page.handleJavaScriptDialog', {
-      accept: action === 'accept',
-      promptText,
-    });
+    if (!this._pendingDialog) {
+      throw new Error(
+        'No dialog is currently pending. ' +
+          'The dialog may have been auto-dismissed or already resolved.'
+      );
+    }
+    try {
+      await this._cdp.send('Page.handleJavaScriptDialog', {
+        accept: action === 'accept',
+        promptText,
+      });
+    } catch (err) {
+      // Dialog may have auto-closed between our check and the CDP call; clear state either way.
+      this._pendingDialog = null;
+      throw err;
+    }
     this._pendingDialog = null;
   }
 

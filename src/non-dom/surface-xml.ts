@@ -77,15 +77,16 @@ export function renderNonDomControlDetails(eid: string, surface: NonDomSurface):
     return `<error>Non-DOM control "${escapeXml(eid)}" not found in active surface.</error>`;
   }
 
+  // Build surfaceDesc as raw text — escapeXml is applied once when embedding in XML below.
   const surfaceDesc =
     surface.kind === 'dialog'
-      ? `JavaScript ${surface.dialogType ?? 'dialog'}: "${escapeXml(surface.dialogMessage ?? '')}"`
+      ? `JavaScript ${surface.dialogType ?? 'dialog'}: "${surface.dialogMessage ?? ''}"`
       : `File picker (${surface.pickerMode ?? 'selectSingle'})`;
 
   const lines: string[] = [
     `<node eid="${escapeXml(eid)}" kind="${ctrl.kind}" region="non_dom" x="0" y="0" w="0" h="0" synthetic="true">`,
     `  ${escapeXml(ctrl.label)}`,
-    `  <surface kind="${surface.kind}">${escapeXml(surfaceDesc)}</surface>`,
+    `  <surface kind="${escapeXml(surface.kind)}">${escapeXml(surfaceDesc)}</surface>`,
     `  <hint>This is a synthetic non-DOM control. Use click to activate buttons; use type to fill inputs. The control lives on a blocking non-DOM surface — resolve it before interacting with page elements.</hint>`,
   ];
 

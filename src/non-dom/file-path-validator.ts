@@ -92,10 +92,23 @@ export function validateFilePaths(rawPaths: string[], allowedRoots: string[]): V
     }
 
     if (allowedRoots.length > 0) {
-      const resolved = path.resolve(raw);
+      // Use realpathSync to dereference symlinks before checking roots — path.resolve alone
+      // does not follow symlinks, so a symlink inside an allowed root pointing outside it
+      // would bypass the guard.
+      let realPath: string;
+      try {
+        realPath = fs.realpathSync(raw);
+      } catch {
+        realPath = path.resolve(raw);
+      }
       const allowed = allowedRoots.some((root) => {
-        const resolvedRoot = path.resolve(root);
-        return resolved.startsWith(resolvedRoot + path.sep) || resolved === resolvedRoot;
+        let resolvedRoot: string;
+        try {
+          resolvedRoot = fs.realpathSync(root);
+        } catch {
+          resolvedRoot = path.resolve(root);
+        }
+        return realPath.startsWith(resolvedRoot + path.sep) || realPath === resolvedRoot;
       });
       if (!allowed) {
         throw new FileValidationError(

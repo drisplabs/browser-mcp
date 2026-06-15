@@ -6,6 +6,7 @@
  */
 
 import { getOrCreateDialogManager } from '../non-dom/dialog-manager.js';
+import { clearSurface } from '../non-dom/surface-store.js';
 import { HandleDialogInputSchema } from './tool-schemas.js';
 import { prepareActionContext } from './action-context.js';
 import { executeAction } from './execute-action.js';
@@ -37,6 +38,8 @@ export async function handleDialog(
     handleRef.current,
     async () => {
       await dialogManager.resolveDialog(input.action, input.prompt_text);
+      // Clear any active non-DOM surface so the next snapshot doesn't echo a stale dialog block.
+      clearSurface(handleRef.current.page);
     },
     ctx,
     captureSnapshot

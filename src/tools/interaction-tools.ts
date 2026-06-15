@@ -98,6 +98,18 @@ async function handleNonDomClick(
   }
 
   if (eid === 'nd-picker-cancel') {
+    // Send an empty file list to cancel the intercepted file chooser. Without this, Chrome
+    // may leave the chooser in a pending state and block subsequent page interactions.
+    if (surface.kind === 'file-picker' && surface.pickerBackendNodeId !== undefined) {
+      try {
+        await handle.cdp.send('DOM.setFileInputFiles', {
+          files: [],
+          backendNodeId: surface.pickerBackendNodeId,
+        });
+      } catch {
+        // Best-effort: chooser may have already closed
+      }
+    }
     clearSurface(handle.page);
     const captureResult = await captureSnapshot();
     ctx.getSnapshotStore().store(pageId, captureResult.snapshot);

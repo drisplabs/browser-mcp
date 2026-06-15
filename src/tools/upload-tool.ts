@@ -45,13 +45,12 @@ export async function upload(rawInput: unknown, ctx: ToolContext): Promise<Uploa
   const snap = ctx.requireSnapshot(pageId);
   const node = ctx.resolveElementByEid(pageId, input.eid, snap);
 
-  // Check multiple-file constraint
-  const isMultiple = snap.nodes.find((n) => n.node_id === node.node_id);
-  // If the snapshot node has attributes indicating single-file, enforce it
-  // (We check for the 'multiple' attribute via the snapshot; absence means single)
+  // Check multiple-file constraint: only allow multiple files when the node explicitly
+  // has the 'multiple' attribute. Absence of the node in snapshot is treated as single-file.
+  const snapNode = snap.nodes.find((n) => n.node_id === node.node_id);
   const allowsMultiple =
-    !isMultiple ||
-    (isMultiple.attributes as Record<string, unknown> | undefined)?.multiple !== undefined;
+    snapNode !== undefined &&
+    (snapNode.attributes as Record<string, unknown> | undefined)?.multiple !== undefined;
 
   if (!allowsMultiple && validatedPaths.length > 1) {
     throw new Error(
