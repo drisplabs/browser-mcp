@@ -8,7 +8,13 @@ import type {
   HarnessStatus,
   ServerCommand,
 } from '../harness-adapter.js';
-import { readJsonConfig, mergeAtPath, writeJsonAtomic, writeFileAtomic } from '../config-io.js';
+import {
+  readJsonConfig,
+  mergeAtPath,
+  writeJsonAtomic,
+  writeFileAtomic,
+  type WriteResult,
+} from '../config-io.js';
 import { resolveSkill } from '../skill-source.js';
 
 export type CommandRunner = (cmd: string, args: string[]) => Promise<number>;
@@ -93,9 +99,15 @@ export class ClaudeCodeAdapter implements HarnessAdapter {
             message: 'Registered via `claude mcp add`',
           };
         }
-        // Non-zero exit (e.g. already registered): fall through to .mcp.json
+        if (scopeFlag !== 'project') {
+          throw new Error(`claude mcp add exited with code ${exitCode}`);
+        }
+        // Non-zero project-scope exit (e.g. already registered): fall through to .mcp.json
       } catch (err) {
         if (!isNotFound(err)) throw err;
+        if (scopeFlag !== 'project') {
+          throw err;
+        }
         // ENOENT — claude not installed: fall through to .mcp.json
       }
     }
@@ -109,11 +121,15 @@ export class ClaudeCodeAdapter implements HarnessAdapter {
     });
 
     if (!changed) {
-      await this.placeSkill(cwd, dryRun);
+      const skillResult = await this.placeSkill(cwd, dryRun);
       return {
-        changed: false,
-        dryRun,
-        message: 'Already configured in .mcp.json (no changes needed)',
+        changed: skillResult.changed,
+        dryRun: dryRun || skillResult.dryRun,
+        message: skillResult.changed
+          ? dryRun
+            ? 'Already configured in .mcp.json; would repair Claude Code skill (--dry-run)'
+            : 'Already configured in .mcp.json; repaired Claude Code skill'
+          : 'Already configured in .mcp.json (no changes needed)',
       };
     }
 
@@ -126,13 +142,14 @@ export class ClaudeCodeAdapter implements HarnessAdapter {
     };
   }
 
-  private async placeSkill(cwd: string, dryRun: boolean): Promise<void> {
+  private async placeSkill(cwd: string, dryRun: boolean): Promise<WriteResult> {
     try {
       const skill = await this.resolveSkillFn();
       const skillPath = join(cwd, '.claude', 'skills', SERVER_NAME, 'SKILL.md');
-      await writeFileAtomic(skillPath, skill.rawContent, { dryRun });
+      return await writeFileAtomic(skillPath, skill.rawContent, { dryRun });
     } catch {
       // Skill placement is best-effort; never fails install
+      return { changed: false, dryRun };
     }
   }
 

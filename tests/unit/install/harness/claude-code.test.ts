@@ -67,6 +67,23 @@ describe('ClaudeCodeAdapter.apply()', () => {
     }
   });
 
+  it('does not fall back to project .mcp.json when user-scope claude mcp add fails', async () => {
+    const dir = await makeTmpDir();
+    try {
+      const runner: CommandRunner = () => Promise.resolve(1);
+      const adapter = new ClaudeCodeAdapter({ runner });
+
+      await expect(adapter.apply({ scope: 'user', cwd: dir })).rejects.toThrow(
+        /claude mcp add exited with code 1/i
+      );
+
+      const { stat } = await import('node:fs/promises');
+      await expect(stat(join(dir, '.mcp.json'))).rejects.toThrow();
+    } finally {
+      await cleanup(dir);
+    }
+  });
+
   it('falls back to .mcp.json when claude CLI is not found (ENOENT)', async () => {
     const dir = await makeTmpDir();
     try {
@@ -233,15 +250,36 @@ describe('ClaudeCodeAdapter skill placement', () => {
       const { rm } = await import('node:fs/promises');
       await rm(join(dir, '.claude', 'skills', 'agent-web-interface', 'SKILL.md'));
 
-      // Second apply: .mcp.json unchanged (changed=false) but skill should be re-placed
+      // Second apply: .mcp.json unchanged but skill should be re-placed and reported.
       const second = await adapter.apply({ scope: 'project', cwd: dir });
-      expect(second.changed).toBe(false);
+      expect(second.changed).toBe(true);
+      expect(second.message).toContain('repaired Claude Code skill');
 
       const content = await readFile(
         join(dir, '.claude', 'skills', 'agent-web-interface', 'SKILL.md'),
         'utf-8'
       );
       expect(content).toBe(FAKE_SKILL);
+    } finally {
+      await cleanup(dir);
+    }
+  });
+
+  it('does not report a change when .mcp.json and SKILL.md are both current', async () => {
+    const dir = await makeTmpDir();
+    try {
+      const runner: CommandRunner = () => {
+        const err = new Error('ENOENT') as NodeJS.ErrnoException;
+        err.code = 'ENOENT';
+        return Promise.reject(err);
+      };
+      const adapter = new ClaudeCodeAdapter({ runner, skillResolver });
+
+      await adapter.apply({ scope: 'project', cwd: dir });
+      const second = await adapter.apply({ scope: 'project', cwd: dir });
+
+      expect(second.changed).toBe(false);
+      expect(second.message).toContain('no changes needed');
     } finally {
       await cleanup(dir);
     }

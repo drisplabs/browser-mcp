@@ -56,12 +56,25 @@ export async function writeFileAtomic(
   const dir = dirname(path);
   await mkdir(dir, { recursive: true });
 
-  // Backup pre-existing file
+  let hasExistingFile = false;
   try {
-    await stat(path);
-    await copyFile(path, path + '.bak');
+    const existing = await readFile(path, 'utf-8');
+    if (existing === content) {
+      return { changed: false, dryRun: false };
+    }
+    hasExistingFile = true;
   } catch {
-    // File does not exist — no backup needed
+    // File does not exist or cannot be read — proceed with the atomic write.
+  }
+
+  // Backup pre-existing file
+  if (hasExistingFile) {
+    try {
+      await stat(path);
+      await copyFile(path, path + '.bak');
+    } catch {
+      // File disappeared between read and backup — no backup needed.
+    }
   }
 
   // Atomic write: temp file → rename

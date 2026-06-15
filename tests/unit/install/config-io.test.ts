@@ -110,6 +110,21 @@ describe('writeJsonAtomic', () => {
     }
   });
 
+  it('does not rewrite or back up identical file content', async () => {
+    const dir = await makeTmpDir();
+    try {
+      const path = join(dir, 'config.json');
+      await writeFile(path, JSON.stringify({ foo: 'bar' }, null, 2) + '\n');
+
+      const result = await writeJsonAtomic(path, { foo: 'bar' });
+
+      expect(result.changed).toBe(false);
+      await expect(stat(path + '.bak')).rejects.toThrow();
+    } finally {
+      await cleanup(dir);
+    }
+  });
+
   it('dry-run reports the change but writes nothing', async () => {
     const dir = await makeTmpDir();
     try {
