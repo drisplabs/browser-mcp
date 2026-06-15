@@ -1,3 +1,7 @@
+## [4.6.4] - 2026-06-15
+
+- fix(install): clean up interactive summary UX and repair three bugs (#84)
+
 ## [4.6.3] - 2026-06-07
 
 - docs: update README quickstart to lead with install command + CHANGELOG (#83)
