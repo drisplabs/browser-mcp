@@ -27,7 +27,7 @@ import {
   HoverInputSchema,
 } from './tool-schemas.js';
 import { executeAction, executeActionWithRetry, type CaptureSnapshotFn } from './execute-action.js';
-import { prepareActionContext } from './action-context.js';
+import { createActionCapture, prepareActionContext } from './action-context.js';
 import type { ToolContext } from './tool-context.types.js';
 import { getOrCreateDialogManager } from '../non-dom/dialog-manager.js';
 import {
@@ -46,13 +46,20 @@ import { stabilizeAfterAction } from './action-stabilization.js';
 import { captureNavigationState } from './navigation-detection.js';
 import { ATTACHMENT_SIGNIFICANCE_THRESHOLD } from '../observation/observation.types.js';
 import { validateFilePaths, FileValidationError } from '../non-dom/file-path-validator.js';
-import { resolveAndUploadFiles } from '../non-dom/file-input-resolver.js';
+import {
+  resolveAndUploadFiles,
+  resolveFileInputTarget,
+  FileInputNotFoundError,
+  type FileInputTarget,
+} from '../non-dom/file-input-resolver.js';
 import type { PageHandle } from '../browser/page-registry.js';
 
 /** Configured allowed roots for file uploads. Empty = no restriction. */
 const ALLOWED_ROOTS: string[] = process.env.UPLOAD_ALLOWED_ROOTS
   ? process.env.UPLOAD_ALLOWED_ROOTS.split(':').filter(Boolean)
   : [];
+
+const DIALOG_CLICK_RACE_TIMEOUT_MS = 1500;
 
 // ============================================================================
 // Non-DOM Click Handler
@@ -78,6 +85,9 @@ async function handleNonDomClick(
   }
 
   const dialogManager = getOrCreateDialogManager(handle.page);
+  if (surface.kind !== 'dialog') {
+    await dialogManager.attach(handle.cdp);
+  }
 
   if (eid === 'nd-dialog-ok') {
     const promptInput = surface.controls.find((c) => c.eid === 'nd-dialog-input');
@@ -211,6 +221,55 @@ async function handlePickerChoose(
 // Element Click with Non-DOM Detection
 // ============================================================================
 
+function toError(err: unknown): Error {
+  return err instanceof Error ? err : new Error(String(err));
+}
+
+async function waitForPendingDialog(
+  dialogManager: ReturnType<typeof getOrCreateDialogManager>,
+  timeoutMs = DIALOG_CLICK_RACE_TIMEOUT_MS
+): Promise<boolean> {
+  if (dialogManager.getPendingDialog()) return true;
+
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    if (dialogManager.getPendingDialog()) return true;
+  }
+
+  return false;
+}
+
+async function clickWithEarlyDialogDetection(
+  clickAction: () => Promise<void>,
+  dialogManager: ReturnType<typeof getOrCreateDialogManager>
+): Promise<{ clickSucceeded: boolean; dialogOpened: boolean }> {
+  let clickSucceeded = true;
+  let clickError: unknown;
+
+  const clickPromise = clickAction().catch((err: unknown) => {
+    clickSucceeded = false;
+    clickError = err;
+  });
+
+  const dialogOpened = await Promise.race([
+    waitForPendingDialog(dialogManager),
+    clickPromise.then(() => false),
+  ]);
+
+  if (dialogOpened) {
+    clickPromise.catch(() => undefined);
+    return { clickSucceeded, dialogOpened: true };
+  }
+
+  await clickPromise;
+  if (clickError && !dialogManager.getPendingDialog()) {
+    throw toError(clickError);
+  }
+
+  return { clickSucceeded, dialogOpened: false };
+}
+
 /**
  * Execute a DOM element click, checking for dialog/file-picker events before
  * running DOM stabilization.  Dialogs block the renderer, so stabilization must
@@ -231,6 +290,7 @@ async function clickElementWithNonDomDetection(
   captureSnapshot: CaptureSnapshotFn
 ): Promise<string> {
   const dialogManager = getOrCreateDialogManager(handle.page);
+  await dialogManager.attach(handle.cdp);
   const beforeClickTs = Date.now();
   const actionStartTime = Date.now();
 
@@ -238,26 +298,13 @@ async function clickElementWithNonDomDetection(
 
   const preClickState = await captureNavigationState(handle);
 
-  // Execute the click
-  let clickSucceeded = true;
-  try {
+  const { clickSucceeded } = await clickWithEarlyDialogDetection(async () => {
     if (x !== undefined && y !== undefined) {
       await clickAtElementOffset(handle.cdp, node.backend_node_id, x, y, modifiers);
     } else {
       await clickByBackendNodeId(handle.cdp, node.backend_node_id, modifiers);
     }
-  } catch (err) {
-    // For non-DOM surface detection we still proceed — the click may have succeeded
-    // enough to open a dialog even if the CDP command returned an error.
-    // Re-throw if no non-DOM surface was opened.
-    clickSucceeded = false;
-
-    // Check for dialog opened despite the error
-    const pendingOnError = dialogManager.getPendingDialog();
-    if (!pendingOnError) {
-      throw err;
-    }
-  }
+  }, dialogManager);
 
   // === Non-DOM Surface Detection (before any stabilization) ===
 
@@ -396,12 +443,21 @@ export async function click(
     throw new Error('Both x and y coordinates must be provided together.');
   }
 
-  const { handleRef, pageId, captureSnapshot } = await prepareActionContext(input.page_id, ctx);
-
   // === Route synthetic non-DOM EIDs ===
   if (hasEid && isNonDomEid(input.eid!)) {
-    return handleNonDomClick(input.eid!, handleRef.current, pageId, ctx, captureSnapshot);
+    const nonDomHandleRef = { current: ctx.resolveExistingPage(input.page_id) };
+    const nonDomPageId = nonDomHandleRef.current.page_id;
+    const nonDomCaptureSnapshot = createActionCapture(ctx, nonDomHandleRef, nonDomPageId);
+    return handleNonDomClick(
+      input.eid!,
+      nonDomHandleRef.current,
+      nonDomPageId,
+      ctx,
+      nonDomCaptureSnapshot
+    );
   }
+
+  const { handleRef, pageId, captureSnapshot } = await prepareActionContext(input.page_id, ctx);
 
   if (hasEid) {
     // DOM element click
@@ -409,10 +465,28 @@ export async function click(
     const node = ctx.resolveElementByEid(pageId, input.eid!, snap);
     const attrs = node.attributes as Record<string, unknown> | undefined;
 
-    // File input: return file-picker surface instead of native picker or guidance
+    let fileInputTarget: Pick<FileInputTarget, 'backendNodeId' | 'allowsMultiple'> | null = null;
     if (attrs?.input_type === 'file') {
-      const allowsMultiple = (attrs?.multiple as boolean | undefined) !== undefined;
-      const surface = buildFilePickerSurfaceForInput(node.backend_node_id, allowsMultiple);
+      fileInputTarget = {
+        backendNodeId: node.backend_node_id,
+        allowsMultiple: (attrs?.multiple as boolean | undefined) !== undefined,
+      };
+    } else if (['button', 'input', 'text'].includes(node.kind)) {
+      try {
+        fileInputTarget = await resolveFileInputTarget(handleRef.current.cdp, node.backend_node_id);
+      } catch (err) {
+        if (!(err instanceof FileInputNotFoundError)) {
+          throw err;
+        }
+      }
+    }
+
+    // File input: return file-picker surface instead of native picker or guidance
+    if (fileInputTarget !== null) {
+      const surface = buildFilePickerSurfaceForInput(
+        fileInputTarget.backendNodeId,
+        fileInputTarget.allowsMultiple
+      );
       setSurface(handleRef.current.page, surface);
 
       const captureResult = await captureSnapshot();
@@ -460,12 +534,15 @@ export async function type(
   ctx: ToolContext
 ): Promise<import('./tool-schemas.js').TypeOutput> {
   const input = TypeInputSchema.parse(rawInput);
-  const { handleRef, pageId, captureSnapshot } = await prepareActionContext(input.page_id, ctx);
 
   // Route synthetic nd-* inputs to surface value update
   if (isNonDomEid(input.eid)) {
-    return handleNonDomType(input.eid, input.text, input.clear, handleRef.current, pageId, ctx);
+    const handle = ctx.resolveExistingPage(input.page_id);
+    const pageId = handle.page_id;
+    return handleNonDomType(input.eid, input.text, input.clear, handle, pageId, ctx);
   }
+
+  const { handleRef, pageId, captureSnapshot } = await prepareActionContext(input.page_id, ctx);
 
   // Normal DOM type
   const snap = ctx.requireSnapshot(pageId);

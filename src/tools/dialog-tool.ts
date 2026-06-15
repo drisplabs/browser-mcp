@@ -24,6 +24,7 @@ export async function handleDialog(
   const { handleRef, pageId, captureSnapshot } = await prepareActionContext(input.page_id, ctx);
 
   const dialogManager = getOrCreateDialogManager(handleRef.current.page);
+  await dialogManager.attach(handleRef.current.cdp);
   const pending = dialogManager.getPendingDialog();
 
   if (!pending) {

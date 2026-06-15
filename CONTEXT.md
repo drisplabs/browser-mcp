@@ -59,3 +59,9 @@ A configured directory within which an upload file path must be contained. Uploa
 
 **Pending non-DOM prompt**:
 A currently-blocking native prompt (open dialog, awaiting auth) surfaced in every action response so the agent knows why the page is blocked and which tool clears it.
+
+### Snapshot & interaction pipeline
+
+**Action transaction**:
+The full lifecycle of an agent-requested browser action, from preparing the page and attempting the interaction through stabilization, observation capture, semantic page snapshot capture, and the returned state response.
+_Avoid_: action wrapper, click flow, post-action plumbing

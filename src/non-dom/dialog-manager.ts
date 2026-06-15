@@ -64,6 +64,14 @@ export class DialogManager {
    * Called once per page during setupPageTracking.
    */
   async attach(cdp: CdpClient): Promise<void> {
+    if (this._cdp === cdp && this._dialogHandler && this._dialogClosedHandler) {
+      return;
+    }
+
+    if (this._cdp && this._cdp !== cdp) {
+      this.detach();
+    }
+
     this._cdp = cdp;
 
     // Subscribe to dialog events

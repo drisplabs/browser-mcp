@@ -138,6 +138,43 @@ describe('DialogManager', () => {
     });
   });
 
+  it('does not duplicate event handlers when attaching the same CDP session twice', async () => {
+    await manager.attach(mock);
+    await manager.attach(mock);
+
+    expect(mock.onSpy).toHaveBeenCalledTimes(3);
+    expect(mock.sendSpy).toHaveBeenCalledWith('Page.setInterceptFileChooserDialog', {
+      enabled: true,
+    });
+    expect(mock.sendSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('rebinds to a fresh CDP session while preserving a pending dialog', async () => {
+    await manager.attach(mock);
+
+    mock.emitEvent('Page.javascriptDialogOpening', {
+      type: 'alert',
+      message: 'Still open',
+      defaultValue: '',
+      url: 'https://example.com',
+    });
+    mock.setActive(false);
+
+    const fresh = createMockCdpClient();
+    fresh.setResponse('Page.setInterceptFileChooserDialog', {});
+    fresh.setResponse('Page.handleJavaScriptDialog', {});
+
+    await manager.attach(fresh);
+    await manager.resolveDialog('accept');
+
+    expect(mock.offSpy).toHaveBeenCalledWith('Page.javascriptDialogOpening', expect.any(Function));
+    expect(fresh.sendSpy).toHaveBeenCalledWith('Page.handleJavaScriptDialog', {
+      accept: true,
+      promptText: undefined,
+    });
+    expect(manager.getPendingDialog()).toBeNull();
+  });
+
   it('tracks file chooser opened events', async () => {
     await manager.attach(mock);
 

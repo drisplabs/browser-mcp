@@ -21,6 +21,7 @@ const {
     clear: vi.fn(),
   };
   const mockDialogManager = {
+    attach: vi.fn().mockResolvedValue(undefined),
     getPendingDialog: vi.fn().mockReturnValue(null),
     wasFileChooserOpenedSince: vi.fn().mockReturnValue(false),
     getFileChooserState: vi.fn(),

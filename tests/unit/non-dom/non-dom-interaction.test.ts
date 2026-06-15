@@ -58,6 +58,7 @@ const {
   };
 
   const mockDialogManager = {
+    attach: vi.fn().mockResolvedValue(undefined),
     getPendingDialog: vi.fn().mockReturnValue(null),
     wasFileChooserOpenedSince: vi.fn().mockReturnValue(false),
     getFileChooserState: vi.fn().mockReturnValue({ opened: false, timestamp: 0 }),
@@ -204,10 +205,15 @@ vi.mock('../../../src/non-dom/file-path-validator.js', () => ({
   FileValidationError: class extends Error {},
 }));
 
-vi.mock('../../../src/non-dom/file-input-resolver.js', () => ({
-  resolveAndUploadFiles: vi.fn().mockResolvedValue(undefined),
-  FileInputNotFoundError: class extends Error {},
-}));
+vi.mock('../../../src/non-dom/file-input-resolver.js', () => {
+  class FileInputNotFoundError extends Error {}
+  return {
+    resolveAndUploadFiles: vi.fn().mockResolvedValue(undefined),
+    resolveFileInputTarget: vi.fn().mockRejectedValue(new FileInputNotFoundError()),
+    resolveFileInputBackendNodeId: vi.fn().mockRejectedValue(new FileInputNotFoundError()),
+    FileInputNotFoundError,
+  };
+});
 
 // ── Imports (after mocks) ─────────────────────────────────────────────────────
 
@@ -378,6 +384,28 @@ describe('click — DOM element: dialog detection post-click', () => {
     expect(mockSetSurface).toHaveBeenCalled();
     // Result includes surface XML
     expect(result).toContain('<non_dom />');
+  });
+
+  it('returns dialog surface without waiting for a hung click command', async () => {
+    const pendingDialog = {
+      type: 'alert',
+      message: 'Hello',
+      defaultValue: '',
+      url: 'https://example.com',
+    };
+    let pendingChecks = 0;
+    mockDialogManager.getPendingDialog.mockImplementation(() => {
+      pendingChecks += 1;
+      return pendingChecks >= 2 ? pendingDialog : null;
+    });
+    mockClickByBackendNodeId.mockImplementationOnce(() => new Promise(() => undefined));
+
+    const startedAt = Date.now();
+    const result = await click({ page_id: 'test-page', eid: 'e1' }, ctx);
+
+    expect(Date.now() - startedAt).toBeLessThan(1000);
+    expect(result).toContain('<non_dom />');
+    expect(mockStabilizeAfterAction).not.toHaveBeenCalled();
   });
 
   it('detects a file chooser after a DOM click and builds a file-picker surface', async () => {
