@@ -305,27 +305,6 @@
       }
     },
     {
-      "_note": "act_upload was never wired into the live MCP registration. Use the 'upload' tool registered by tool-registration.ts instead.",
-      "name": "act_upload",
-      "status": "legacy_unregistered",
-      "description": "LEGACY — not registered. Use the 'upload' MCP tool instead. That tool accepts eid + files[], resolves the real file input automatically, and never opens the native OS picker.",
-      "inputSchema": {
-        "type": "object",
-        "required": ["target", "files"],
-        "properties": {
-          "target": {
-            "type": "object",
-            "description": "ElementRef for file input (legacy format)"
-          },
-          "files": {
-            "type": "array",
-            "items": { "type": "string" },
-            "description": "Array of file paths to upload"
-          }
-        }
-      }
-    },
-    {
       "name": "nav_goto",
       "description": "Navigates to a URL. Waits for initial load.",
       "inputSchema": {

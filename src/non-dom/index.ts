@@ -27,7 +27,11 @@ export { resolveAndUploadFiles, FileInputNotFoundError } from './file-input-reso
 export { DialogManager, getOrCreateDialogManager, removeDialogManager } from './dialog-manager.js';
 export type { PendingDialog, FileChooserState, DialogType } from './dialog-manager.js';
 
-export { DownloadManager } from './download-manager.js';
+export {
+  DownloadManager,
+  getOrCreateDownloadManager,
+  removeDownloadManager,
+} from './download-manager.js';
 export type { DownloadEntry, DownloadStatus } from './download-manager.js';
 
 export { setPermissions } from './permission-manager.js';

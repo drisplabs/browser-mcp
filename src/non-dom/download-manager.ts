@@ -87,3 +87,28 @@ export class DownloadManager {
     this._entries.clear();
   }
 }
+
+/**
+ * Per-page download managers keyed by page object reference.
+ * Mirrors the DialogManager registry so each page gets its own manager,
+ * cleaned up when the page closes.
+ */
+const downloadManagers = new WeakMap<object, DownloadManager>();
+
+/**
+ * Get the existing DownloadManager for a page, or create one bound to the
+ * given download directory.
+ */
+export function getOrCreateDownloadManager(page: object, downloadDir: string): DownloadManager {
+  let manager = downloadManagers.get(page);
+  if (!manager) {
+    manager = new DownloadManager(downloadDir);
+    downloadManagers.set(page, manager);
+  }
+  return manager;
+}
+
+/** Remove the DownloadManager bound to a page (called on page close). */
+export function removeDownloadManager(page: object): void {
+  downloadManagers.delete(page);
+}

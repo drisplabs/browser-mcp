@@ -26,10 +26,7 @@ import { inspectCanvas } from './canvas-tools.js';
 import { getFormUnderstanding, getFieldContext } from './form-tools.js';
 import { readPage } from './readability-tools.js';
 import { listNetworkCalls, searchNetworkCalls } from './network-tools.js';
-import { upload } from './upload-tool.js';
-import { handleDialog } from './dialog-tool.js';
 import { grantPermission } from './permission-tool.js';
-import { setDownloadBehavior } from './download-tool.js';
 
 // Import all input schemas
 import {
@@ -54,10 +51,7 @@ import {
   TakeScreenshotInputSchemaBase,
   InspectCanvasInputSchemaBase,
   ReadPageInputSchema,
-  UploadInputSchemaBase,
-  HandleDialogInputSchemaBase,
   GrantPermissionInputSchemaBase,
-  SetDownloadBehaviorInputSchemaBase,
 } from './tool-schemas.js';
 import { GetFormUnderstandingInputSchema, GetFieldContextInputSchema } from './form-tools.js';
 import { ListNetworkCallsInputSchema, SearchNetworkCallsInputSchema } from './tool-schemas.js';
@@ -394,33 +388,6 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
   // ============================================================================
 
   server.registerTool(
-    'upload',
-    {
-      title: 'Upload File',
-      description:
-        'Upload one or more files to a file input without opening the native OS file picker. ' +
-        'Target the file input directly, its associated label, a styled upload button, ' +
-        'or a dropzone container — the server resolves the real <input type="file"> automatically. ' +
-        'Files must exist as absolute paths on the host where Chrome runs.',
-      inputSchema: UploadInputSchemaBase.shape,
-    },
-    wrap(upload)
-  );
-
-  server.registerTool(
-    'handle_dialog',
-    {
-      title: 'Handle Dialog',
-      description:
-        'Accept or dismiss a pending JavaScript dialog (alert, confirm, prompt, or beforeunload). ' +
-        'For prompt dialogs, supply prompt_text to answer the dialog. ' +
-        'A safe auto-dismiss policy prevents session deadlock when no dialog is handled.',
-      inputSchema: HandleDialogInputSchemaBase.shape,
-    },
-    wrap(handleDialog)
-  );
-
-  server.registerTool(
     'grant_permission',
     {
       title: 'Grant Permission',
@@ -430,18 +397,5 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
       inputSchema: GrantPermissionInputSchemaBase.shape,
     },
     wrap(grantPermission)
-  );
-
-  server.registerTool(
-    'set_download_behavior',
-    {
-      title: 'Set Download Behavior',
-      description:
-        'Configure where downloads are saved on the browser host. ' +
-        'After calling this tool, clicking download links routes files to the specified directory ' +
-        'instead of triggering a native save dialog.',
-      inputSchema: SetDownloadBehaviorInputSchemaBase.shape,
-    },
-    wrap(setDownloadBehavior)
   );
 }

@@ -25,6 +25,7 @@ import { waitForNetworkQuiet, NAVIGATION_NETWORK_IDLE_TIMEOUT_MS } from './page-
 import { getOrCreateTracker, removeTracker } from './page-network-tracker.js';
 import { getOrCreateRecorder, removeRecorder } from './page-network-recorder.js';
 import { getOrCreateDialogManager, removeDialogManager } from '../non-dom/dialog-manager.js';
+import { getOrCreateDownloadManager, removeDownloadManager } from '../non-dom/download-manager.js';
 import {
   extractErrorMessage,
   isValidHttpUrl,
@@ -83,9 +84,12 @@ export class SessionManager {
   private _lastWsEndpoint: string | undefined;
   /** Promise for in-flight launch/connect operation */
   private _connectionPromise: Promise<void> | null = null;
+  /** Absolute download directory (AWI_DOWNLOAD_DIR), or undefined for browser default. */
+  private readonly downloadDir?: string;
 
-  constructor() {
+  constructor(downloadDir?: string) {
     this.registry = new PageRegistry();
+    this.downloadDir = downloadDir;
   }
 
   /**
@@ -1275,12 +1279,25 @@ export class SessionManager {
           error: err instanceof Error ? err.message : String(err),
         });
       });
+
+      // Route downloads to AWI_DOWNLOAD_DIR when configured. Opt-in: when the
+      // dir is unset we leave the browser's default download behavior intact.
+      if (this.downloadDir) {
+        const downloadManager = getOrCreateDownloadManager(page, this.downloadDir);
+        void downloadManager.attach(handle.cdp).catch((err) => {
+          this.logger.debug('DownloadManager attach failed (non-fatal)', {
+            page_id: handle.page_id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+      }
     }
 
     page.on('close', () => {
       removeTracker(page);
       removeRecorder(page);
       removeDialogManager(page);
+      removeDownloadManager(page);
     });
   }
 }

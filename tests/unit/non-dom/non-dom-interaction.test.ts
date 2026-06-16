@@ -218,6 +218,8 @@ vi.mock('../../../src/non-dom/file-input-resolver.js', () => {
 // ── Imports (after mocks) ─────────────────────────────────────────────────────
 
 import { click, type } from '../../../src/tools/interaction-tools.js';
+import { resolveAndUploadFiles } from '../../../src/non-dom/file-input-resolver.js';
+import { validateFilePaths } from '../../../src/non-dom/file-path-validator.js';
 import { createTestToolContext } from '../../helpers/test-tool-context.js';
 import type { ToolContext } from '../../../src/tools/tool-context.types.js';
 
@@ -352,6 +354,44 @@ describe('click — nd-* EID routing (file picker)', () => {
     await expect(click({ page_id: 'test-page', eid: 'nd-picker-choose' }, ctx)).rejects.toThrow(
       'File path is empty'
     );
+  });
+
+  it('nd-picker-choose uploads a single file via the typed path (click+type flow)', async () => {
+    // beforeEach surface: selectSingle, backendNodeId 42, nd-picker-path = "/tmp/file.txt"
+    vi.mocked(validateFilePaths).mockReturnValueOnce({ paths: ['/tmp/file.txt'] });
+
+    await click({ page_id: 'test-page', eid: 'nd-picker-choose' }, ctx);
+
+    expect(resolveAndUploadFiles).toHaveBeenCalledWith(mockHandle.cdp, 42, ['/tmp/file.txt']);
+    expect(mockClearSurface).toHaveBeenCalled();
+  });
+
+  it('nd-picker-choose uploads multiple newline-separated files for a selectMultiple picker', async () => {
+    mockGetSurface.mockReturnValue({
+      ...mockPickerSurface,
+      pickerMode: 'selectMultiple',
+      pickerBackendNodeId: 99,
+      controls: [
+        {
+          eid: 'nd-picker-path',
+          kind: 'input' as const,
+          label: 'File paths (one per line)',
+          value: '/tmp/a.txt\n/tmp/b.txt',
+        },
+        { eid: 'nd-picker-choose', kind: 'button' as const, label: 'Choose' },
+        { eid: 'nd-picker-cancel', kind: 'button' as const, label: 'Cancel' },
+      ],
+    });
+    vi.mocked(validateFilePaths).mockReturnValueOnce({ paths: ['/tmp/a.txt', '/tmp/b.txt'] });
+
+    await click({ page_id: 'test-page', eid: 'nd-picker-choose' }, ctx);
+
+    expect(validateFilePaths).toHaveBeenCalledWith(['/tmp/a.txt', '/tmp/b.txt'], expect.anything());
+    expect(resolveAndUploadFiles).toHaveBeenCalledWith(mockHandle.cdp, 99, [
+      '/tmp/a.txt',
+      '/tmp/b.txt',
+    ]);
+    expect(mockClearSurface).toHaveBeenCalled();
   });
 });
 

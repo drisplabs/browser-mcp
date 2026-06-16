@@ -36,19 +36,33 @@ Tool: find
   label: "Direct file input"
 ```
 
-Copy the returned `eid`. Then:
+Copy the returned `eid`. Clicking a file input opens a synthetic non-DOM
+file-picker surface instead of the native OS picker:
 
 ```
-Tool: upload
+Tool: click
   eid: <eid from find>
-  files: ["/etc/hostname"]        # any small readable file on the host
+```
+
+**Expected:** Response includes a `<non_dom kind="file-picker">` surface with
+`nd-picker-path` (input), `nd-picker-choose`, and `nd-picker-cancel`, plus
+`<dom_blocked reason="file-picker" />`. No OS file picker opened.
+
+Type the absolute host path into the synthetic path input, then choose:
+
+```
+Tool: type
+  eid:  "nd-picker-path"
+  text: "/etc/hostname"        # any small readable file on the host
+
+Tool: click
+  eid: "nd-picker-choose"
 ```
 
 **Expected:**
 
-- Response includes a state snapshot (no error).
+- Response includes a state snapshot (no error); the file-picker surface is cleared.
 - The status box under "1a" shows `✓ Files received: hostname`.
-- No OS file picker opened.
 
 ---
 
@@ -67,23 +81,24 @@ Tool: click
   eid: <eid of "⬆ Upload File" button>
 ```
 
-**Expected:** The click response includes a `<file_input_guidance>` block telling you to use
-the `upload` tool. No picker opened.
+**Expected:** Clicking the styled button (which wraps a hidden file input) opens the synthetic
+`<non_dom kind="file-picker">` surface directly. No native picker opened.
 
-Now complete the upload correctly:
-
-```
-Tool: find
-  label: "Hidden file input behind styled button"
-```
+Complete the upload through the synthetic controls:
 
 ```
-Tool: upload
-  eid: <eid of the hidden input>
-  files: ["/etc/hostname"]
+Tool: type
+  eid:  "nd-picker-path"
+  text: "/etc/hostname"
+
+Tool: click
+  eid: "nd-picker-choose"
 ```
 
 **Expected:** Status box under "1b" shows the filename.
+
+> Tip: if you instead click the hidden `<input type="file">` directly (via `find` →
+> "Hidden file input behind styled button"), the same file-picker surface appears.
 
 ---
 
@@ -95,13 +110,19 @@ Tool: find
 ```
 
 ```
-Tool: upload
+Tool: click
   eid: <eid of label or labelled input>
-  files: ["/etc/hostname"]
+
+Tool: type
+  eid:  "nd-picker-path"
+  text: "/etc/hostname"
+
+Tool: click
+  eid: "nd-picker-choose"
 ```
 
-**Expected:** Status box under "1c" shows the filename. The resolver follows the `for=`
-association to the real `<input type="file">`.
+**Expected:** Status box under "1c" shows the filename. Clicking the label opens the picker
+surface; choosing resolves the `for=` association to the real `<input type="file">`.
 
 ---
 
@@ -113,9 +134,15 @@ Tool: find
 ```
 
 ```
-Tool: upload
+Tool: click
   eid: <eid of dropzone input or drop-zone div>
-  files: ["/etc/hostname"]
+
+Tool: type
+  eid:  "nd-picker-path"
+  text: "/etc/hostname"
+
+Tool: click
+  eid: "nd-picker-choose"
 ```
 
 **Expected:** Status box under "1d" shows the filename.
@@ -124,25 +151,40 @@ Tool: upload
 
 ## Test 1e — Multi-file input
 
+For a multi-file picker, type one absolute path per line into `nd-picker-path`
+(newline-separated), then choose:
+
 ```
 Tool: find
   label: "Multiple file input"
 ```
 
 ```
-Tool: upload
+Tool: click
   eid: <eid>
-  files: ["/etc/hostname", "/etc/shells"]   # two files
+
+Tool: type
+  eid:  "nd-picker-path"
+  text: "/etc/hostname\n/etc/shells"   # two files, one per line
+
+Tool: click
+  eid: "nd-picker-choose"
 ```
 
 **Expected:** Status box under "1e" shows both filenames.
 
-**Negative test** — single-file input with two files:
+**Negative test** — single-file picker with two paths:
 
 ```
-Tool: upload
+Tool: click
   eid: <eid of "Direct file input" from 1a>
-  files: ["/etc/hostname", "/etc/shells"]
+
+Tool: type
+  eid:  "nd-picker-path"
+  text: "/etc/hostname\n/etc/shells"
+
+Tool: click
+  eid: "nd-picker-choose"
 ```
 
 **Expected:** Error mentioning "does not allow multiple files".
@@ -151,18 +193,27 @@ Tool: upload
 
 ## Test 1f — Path validation errors
 
+Open any file-picker surface (click a file input), then type an invalid path and choose:
+
 ```
-Tool: upload
-  eid: <any file input eid>
-  files: ["relative/path.txt"]
+Tool: type
+  eid:  "nd-picker-path"
+  text: "relative/path.txt"
+
+Tool: click
+  eid: "nd-picker-choose"
 ```
 
 **Expected:** Error with `RELATIVE_PATH` — path must be absolute.
 
 ```
-Tool: upload
-  eid: <any file input eid>
-  files: ["/tmp/does-not-exist-xyz.txt"]
+Tool: type
+  eid:  "nd-picker-path"
+  text: "/tmp/does-not-exist-xyz.txt"
+  clear: true
+
+Tool: click
+  eid: "nd-picker-choose"
 ```
 
 **Expected:** Error with `FILE_NOT_FOUND`.
@@ -181,15 +232,15 @@ Tool: click
   eid: <eid>
 ```
 
-**Expected:** After the click, the snapshot/response includes a `<pending_dialog>` element
-with `type="alert"` and `message="This is a test alert..."`.
-The page is NOT frozen — the auto-dismiss policy kept it alive.
+**Expected:** After the click, the response includes a `<non_dom kind="dialog" dialog_type="alert">`
+surface with an `nd-dialog-ok` control and `<dom_blocked reason="dialog" />`. The page is NOT
+frozen — the surface holds the dialog open until you resolve it.
 
-Now resolve it explicitly (or it was auto-dismissed):
+Now resolve it by clicking the synthetic OK control:
 
 ```
-Tool: handle_dialog
-  action: "dismiss"
+Tool: click
+  eid: "nd-dialog-ok"
 ```
 
 **Expected:** State response with the alert now cleared. Status box under "2a" shows
@@ -209,11 +260,12 @@ Tool: click
   eid: <eid>
 ```
 
-Then accept:
+**Expected:** A `<non_dom kind="dialog" dialog_type="confirm">` surface with `nd-dialog-ok`
+(Accept) and `nd-dialog-dismiss` (Dismiss). Accept it:
 
 ```
-Tool: handle_dialog
-  action: "accept"
+Tool: click
+  eid: "nd-dialog-ok"
 ```
 
 **Expected:** Status box under "2b" shows `✓ confirm() accepted (result = true)`.
@@ -226,8 +278,8 @@ Tool: click
 ```
 
 ```
-Tool: handle_dialog
-  action: "dismiss"
+Tool: click
+  eid: "nd-dialog-dismiss"
 ```
 
 **Expected:** Status box shows `○ confirm() dismissed (result = false)`.
@@ -246,35 +298,47 @@ Tool: click
   eid: <eid>
 ```
 
+**Expected:** A `<non_dom kind="dialog" dialog_type="prompt">` surface with an `nd-dialog-input`
+field plus `nd-dialog-ok` (Submit) and `nd-dialog-dismiss` (Cancel). Type the answer into the
+synthetic input, then submit:
+
 ```
-Tool: handle_dialog
-  action:       "accept"
-  prompt_text:  "hello from the agent"
+Tool: type
+  eid:  "nd-dialog-input"
+  text: "hello from the agent"
+
+Tool: click
+  eid: "nd-dialog-ok"
 ```
 
 **Expected:** Status box under "2c" shows `✓ prompt() answered: "hello from the agent"`.
 
 ---
 
-## Test 2d — handle_dialog with no pending dialog
+## Test 2d — Clicking a dialog control with no active surface
 
 ```
-Tool: handle_dialog
-  action: "accept"
+Tool: click
+  eid: "nd-dialog-ok"
 ```
 
-**Expected:** Error: "No pending JavaScript dialog."
+**Expected:** Error: "No active non-DOM surface." (the synthetic control is only valid while a
+dialog surface is present).
 
 ---
 
-## Test 3a — Download (set_download_behavior first)
+## Test 3a — Download (configured via AWI_DOWNLOAD_DIR)
+
+**Setup (before launching the server):** export the download directory as an
+environment variable. There is no `set_download_behavior` tool — download routing
+is infrastructure configured once at startup.
 
 ```
-Tool: set_download_behavior
-  download_path: "/tmp/agent-downloads"
+export AWI_DOWNLOAD_DIR="/tmp/agent-downloads"
 ```
 
-**Expected:** XML result confirming the download path is configured.
+The directory is validated (must be absolute) and created if missing when the
+session starts. A non-absolute path fails startup with a clear error.
 
 ```
 Tool: find
@@ -364,17 +428,17 @@ All items in the result list should show ✓. Items showing ✗ indicate a regre
 | #   | Test Case                               | Expected outcome          |
 | --- | --------------------------------------- | ------------------------- |
 | 1a  | Direct file input upload                | Files received, no picker |
-| 1b  | Click styled button → guidance returned | Guidance in response      |
-| 1b  | Upload via hidden input                 | Files received            |
+| 1b  | Click styled button → picker surface    | file-picker surface shown |
+| 1b  | Upload via nd-picker controls           | Files received            |
 | 1c  | Label-associated input                  | Resolver follows for=     |
 | 1d  | Dropzone container                      | Resolver finds descendant |
 | 1e  | Multi-file upload                       | Both files received       |
 | 1f  | Relative path rejected                  | RELATIVE_PATH error       |
 | 1f  | Non-existent path rejected              | FILE_NOT_FOUND error      |
-| 2a  | Alert dismissed via handle_dialog       | Page unfrozen             |
+| 2a  | Alert resolved via nd-dialog-ok         | Page unfrozen             |
 | 2b  | Confirm accepted / dismissed            | Result reflected in page  |
-| 2c  | Prompt answered with text               | Text echoed in page       |
-| 2d  | handle_dialog with no dialog pending    | Helpful error             |
+| 2c  | Prompt answered via nd-dialog-input     | Text echoed in page       |
+| 2d  | nd-dialog-ok with no active surface     | Helpful error             |
 | 3a  | Download routed to configured directory | File appears on disk      |
 | 4a  | Geolocation granted — no prompt         | Coordinates returned      |
 | 4b  | Notifications denied — no prompt        | Permission: denied        |

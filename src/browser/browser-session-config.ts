@@ -10,9 +10,14 @@
  *   AWI_HEADLESS      - true | false (default: false, only for persistent/isolated)
  *   AWI_STEALTH       - true | false (default: true) fingerprint-only anti-detection
  *                       for launched browsers; no-op when connecting to user Chrome
+ *   AWI_DOWNLOAD_DIR  - Absolute path for browser downloads (default: unset = browser
+ *                       default behavior). When set, must be absolute; created if missing.
  *
  * @module browser/browser-session-config
  */
+
+import { isAbsolute } from 'node:path';
+import { mkdirSync } from 'node:fs';
 
 /**
  * Browser session modes.
@@ -44,6 +49,13 @@ export interface BrowserSessionConfig {
    * has a genuine fingerprint).
    */
   stealth?: boolean;
+
+  /**
+   * Absolute directory where browser downloads are routed.
+   * undefined = unset → default browser download behavior (no routing).
+   * When set, it is validated (must be absolute) and created if missing.
+   */
+  downloadDir?: string;
 }
 
 /**
@@ -65,10 +77,45 @@ export function loadBrowserConfig(): BrowserSessionConfig {
   const stealthRaw = process.env.AWI_STEALTH?.trim().toLowerCase();
   const stealth = !(stealthRaw !== undefined && ['false', '0', 'no', 'off'].includes(stealthRaw));
 
+  const downloadDir = resolveDownloadDir();
+
   return {
     browserMode,
     headless: process.env.AWI_HEADLESS?.trim().toLowerCase() === 'true',
     cdpUrl,
     stealth,
+    downloadDir,
   };
+}
+
+/**
+ * Resolve and validate AWI_DOWNLOAD_DIR.
+ *
+ * Opt-in: returns undefined when unset/empty (browser default behavior).
+ * When set, the path must be absolute and is created (recursively) if missing.
+ * Fails fast with a clear, actionable error so misconfiguration surfaces at
+ * startup rather than silently dropping downloads later.
+ */
+function resolveDownloadDir(): string | undefined {
+  const raw = process.env.AWI_DOWNLOAD_DIR?.trim();
+  if (!raw) return undefined;
+
+  if (!isAbsolute(raw)) {
+    throw new Error(
+      `AWI_DOWNLOAD_DIR must be an absolute path, but got: "${raw}". ` +
+        `Provide an absolute directory path (e.g. /tmp/agent-downloads).`
+    );
+  }
+
+  try {
+    mkdirSync(raw, { recursive: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `AWI_DOWNLOAD_DIR could not be created at "${raw}": ${message}. ` +
+        `Ensure the path is writable.`
+    );
+  }
+
+  return raw;
 }
