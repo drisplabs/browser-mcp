@@ -1311,7 +1311,15 @@ export class SessionManager {
     page.on('close', () => {
       removeTracker(page);
       removeRecorder(page);
-      removeDialogManager(page);
+      // Apply the default auto-dismiss policy before tearing down the manager so a
+      // page that closes with a pending JavaScript dialog does not leak a blocked
+      // renderer. Best-effort and fire-and-forget — the page is going away.
+      void getOrCreateDialogManager(page)
+        .applyDefaultPolicy()
+        .catch(() => undefined)
+        .finally(() => {
+          removeDialogManager(page);
+        });
       removeDownloadManager(page);
       removePermissionDetector(page);
     });

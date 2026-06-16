@@ -88,6 +88,7 @@ const {
     getFileChooserState: vi.fn().mockReturnValue({ opened: false, timestamp: 0 }),
     clearFileChooser: vi.fn(),
     resolveDialog: vi.fn().mockResolvedValue(undefined),
+    applyDefaultPolicy: vi.fn().mockResolvedValue(undefined),
   };
 
   const mockSnapshotStore = {
@@ -516,11 +517,18 @@ describe('click — DOM element: dialog detection post-click', () => {
   });
 
   it('detects a dialog after a DOM click and returns surface XML without stabilizing', async () => {
-    mockDialogManager.getPendingDialog.mockReturnValue({
-      type: 'alert',
+    // The dialog is opened BY this click, so it is not pending when the
+    // safety-net guard checks pre-click (1st call → null), only after (2nd+ → dialog).
+    const dialog = {
+      type: 'alert' as const,
       message: 'Hello',
       defaultValue: '',
       url: 'https://example.com',
+    };
+    let calls = 0;
+    mockDialogManager.getPendingDialog.mockImplementation(() => {
+      calls += 1;
+      return calls >= 2 ? dialog : null;
     });
 
     const result = await click({ page_id: 'test-page', eid: 'e1' }, ctx);
@@ -644,6 +652,61 @@ describe('click — DOM element: dialog detection post-click', () => {
       setTimeoutSpy.mockRestore();
       vi.useRealTimers();
     }
+  });
+});
+
+describe('DOM action while a dialog is already pending — safety net (Slice 3)', () => {
+  let ctx: ToolContext;
+  const pendingDialog = {
+    type: 'confirm' as const,
+    message: 'Are you sure?',
+    defaultValue: '',
+    url: 'https://example.com',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsNonDomEid.mockReturnValue(false);
+    mockGetSurface.mockReturnValue(null);
+    mockDialogManager.wasFileChooserOpenedSince.mockReturnValue(false);
+    mockPermissionDetector.getPendingPermission.mockReturnValue(null);
+    // Dialog is pending from a prior unresolved action — present from the first read.
+    mockDialogManager.getPendingDialog.mockReturnValue(pendingDialog);
+    mockDialogManager.applyDefaultPolicy.mockResolvedValue(undefined);
+    ctx = makeCtx();
+  });
+
+  it('click auto-dismisses the pending dialog instead of hanging, returns fresh state', async () => {
+    const result = await click({ page_id: 'test-page', eid: 'e1' }, ctx);
+
+    expect(mockDialogManager.applyDefaultPolicy).toHaveBeenCalledTimes(1);
+    expect(mockClearSurface).toHaveBeenCalled();
+    // Must NOT dispatch the DOM click onto a blocked renderer.
+    expect(mockClickByBackendNodeId).not.toHaveBeenCalled();
+    // Returns a fresh state response (afterNonDomResolution stabilizes + captures).
+    expect(mockStabilizeAfterAction).toHaveBeenCalled();
+    expect(result).toBeDefined();
+  });
+
+  it('type auto-dismisses the pending dialog before a DOM type', async () => {
+    mockIsNonDomEid.mockImplementation((eid: string) => eid.startsWith('nd-'));
+    const { executeActionWithRetry } = await import('../../../src/tools/execute-action.js');
+    vi.mocked(executeActionWithRetry).mockClear();
+
+    await type({ page_id: 'test-page', eid: 'dom-eid', text: 'hi' }, ctx);
+
+    expect(mockDialogManager.applyDefaultPolicy).toHaveBeenCalledTimes(1);
+    // Must not type into a blocked renderer.
+    expect(executeActionWithRetry).not.toHaveBeenCalled();
+  });
+
+  it('proceeds normally when no dialog is pending (guard is a no-op)', async () => {
+    mockDialogManager.getPendingDialog.mockReturnValue(null);
+
+    await click({ page_id: 'test-page', eid: 'e1' }, ctx);
+
+    expect(mockDialogManager.applyDefaultPolicy).not.toHaveBeenCalled();
+    expect(mockClickByBackendNodeId).toHaveBeenCalled();
   });
 });
 

@@ -293,6 +293,36 @@ function toError(err: unknown): Error {
   return err instanceof Error ? err : new Error(String(err));
 }
 
+/**
+ * Safety net for the renderer-blocking dialog.
+ *
+ * A pending JavaScript dialog blocks the renderer, so any DOM action the agent
+ * issues against the page (instead of resolving the `nd-*` dialog control) would
+ * hang waiting on a thread that cannot run. When that happens we apply the
+ * DialogManager's default auto-dismiss policy, clear the stale surface, and
+ * return a fresh state response so the session keeps moving rather than
+ * deadlocking.
+ *
+ * Returns the state-response string when a dialog was dismissed (the caller
+ * should return it directly), or `null` when no dialog was pending (proceed with
+ * the normal DOM action).
+ */
+async function dismissBlockingDialogIfPending(
+  handle: PageHandle,
+  pageId: string,
+  ctx: ToolContext,
+  captureSnapshot: CaptureSnapshotFn
+): Promise<string | null> {
+  const dialogManager = getOrCreateDialogManager(handle.page);
+  if (!dialogManager.getPendingDialog()) return null;
+
+  // Auto-dismiss to unblock the renderer (default policy = dismiss).
+  await dialogManager.applyDefaultPolicy();
+  clearSurface(handle.page);
+
+  return afterNonDomResolution(handle, pageId, ctx, captureSnapshot);
+}
+
 async function waitForPendingDialog(
   dialogManager: ReturnType<typeof getOrCreateDialogManager>,
   timeoutMs = DIALOG_CLICK_RACE_TIMEOUT_MS
@@ -548,6 +578,16 @@ export async function click(
 
   const { handleRef, pageId, captureSnapshot } = await prepareActionContext(input.page_id, ctx);
 
+  // Safety net: if a blocking dialog is pending and the agent acted on the page
+  // (a real eid/coords) instead of the nd-* dialog control, auto-dismiss it.
+  const dismissed = await dismissBlockingDialogIfPending(
+    handleRef.current,
+    pageId,
+    ctx,
+    captureSnapshot
+  );
+  if (dismissed !== null) return dismissed;
+
   if (hasEid) {
     // DOM element click
     const snap = ctx.requireSnapshot(pageId);
@@ -622,6 +662,14 @@ export async function type(
 
   const { handleRef, pageId, captureSnapshot } = await prepareActionContext(input.page_id, ctx);
 
+  const dismissed = await dismissBlockingDialogIfPending(
+    handleRef.current,
+    pageId,
+    ctx,
+    captureSnapshot
+  );
+  if (dismissed !== null) return dismissed;
+
   // Normal DOM type
   const snap = ctx.requireSnapshot(pageId);
   const node = ctx.resolveElementByEid(pageId, input.eid, snap);
@@ -653,6 +701,14 @@ export async function press(
   const input = PressInputSchema.parse(rawInput);
   const { handleRef, pageId, captureSnapshot } = await prepareActionContext(input.page_id, ctx);
 
+  const dismissed = await dismissBlockingDialogIfPending(
+    handleRef.current,
+    pageId,
+    ctx,
+    captureSnapshot
+  );
+  if (dismissed !== null) return dismissed;
+
   const result = await executeAction(
     handleRef.current,
     async () => {
@@ -675,6 +731,14 @@ export async function select(
 ): Promise<import('./tool-schemas.js').SelectOutput> {
   const input = SelectInputSchema.parse(rawInput);
   const { handleRef, pageId, captureSnapshot } = await prepareActionContext(input.page_id, ctx);
+
+  const dismissed = await dismissBlockingDialogIfPending(
+    handleRef.current,
+    pageId,
+    ctx,
+    captureSnapshot
+  );
+  if (dismissed !== null) return dismissed;
 
   const snap = ctx.requireSnapshot(pageId);
   const node = ctx.resolveElementByEid(pageId, input.eid, snap);
@@ -703,6 +767,14 @@ export async function hover(
 ): Promise<import('./tool-schemas.js').HoverOutput> {
   const input = HoverInputSchema.parse(rawInput);
   const { handleRef, pageId, captureSnapshot } = await prepareActionContext(input.page_id, ctx);
+
+  const dismissed = await dismissBlockingDialogIfPending(
+    handleRef.current,
+    pageId,
+    ctx,
+    captureSnapshot
+  );
+  if (dismissed !== null) return dismissed;
 
   const snap = ctx.requireSnapshot(pageId);
   const node = ctx.resolveElementByEid(pageId, input.eid, snap);
