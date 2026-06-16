@@ -601,6 +601,38 @@ describe('click — DOM element: dialog detection post-click', () => {
     expect(mockClickByBackendNodeId).toHaveBeenCalledWith(mockHandle.cdp, 123, undefined);
     expect(result).toBeDefined();
   });
+
+  it('reads the permission flag once after stabilization (no fixed-interval poll)', async () => {
+    // Slice 1 regression: permission detection must be a single flag read AFTER
+    // stabilizeAfterAction, not a loop that polls getPendingPermission() on a timer.
+    mockPermissionDetector.getPendingPermission.mockReturnValue(null);
+
+    await click({ page_id: 'test-page', eid: 'e1' }, ctx);
+
+    // Exactly one read — the post-stabilization flag check — proves there is no poll loop.
+    expect(mockPermissionDetector.getPendingPermission).toHaveBeenCalledTimes(1);
+  });
+
+  it('a no-surface click schedules no permission-wait timers (fake timers)', async () => {
+    // Slice 1 acceptance: a click that opens no permission prompt adds 0ms beyond
+    // stabilization. With fake timers installed, the click must run to completion
+    // without scheduling the 20ms poll the removed waitForPendingPermission used.
+    vi.useFakeTimers();
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    try {
+      mockPermissionDetector.getPendingPermission.mockReturnValue(null);
+
+      const promise = click({ page_id: 'test-page', eid: 'e1' }, ctx);
+      await vi.runAllTimersAsync();
+      await promise;
+
+      const pollCalls = setTimeoutSpy.mock.calls.filter(([, delay]) => delay === 20);
+      expect(pollCalls).toHaveLength(0);
+    } finally {
+      setTimeoutSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('click — file input: builds file-picker surface immediately', () => {

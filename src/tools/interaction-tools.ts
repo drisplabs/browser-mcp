@@ -63,12 +63,6 @@ const ALLOWED_ROOTS: string[] = process.env.UPLOAD_ALLOWED_ROOTS
   : [];
 
 const DIALOG_CLICK_RACE_TIMEOUT_MS = 1500;
-/**
- * Max time to wait after a click for an asynchronously-reported permission
- * request. Kept short: it is the latency a click pays when it does NOT trigger
- * a permission. The binding round-trip is typically well under 100ms.
- */
-const PERMISSION_CLICK_RACE_TIMEOUT_MS = 500;
 
 // ============================================================================
 // Non-DOM Click Handler
@@ -319,32 +313,6 @@ async function waitForPendingDialog(
   return false;
 }
 
-/**
- * Poll the permission detector for a request reported by the injected script.
- *
- * Unlike dialogs (a synchronous CDP event), a permission request is reported
- * asynchronously: the click runs page JS that calls a patched permission API,
- * which queries the current state and then notifies the host over a CDP
- * binding. That round-trip lands shortly *after* the click action resolves, so
- * we poll briefly. The wait is bounded and returns the instant a request
- * appears, so clicks that trigger no permission pay at most the short timeout.
- */
-async function waitForPendingPermission(
-  detector: ReturnType<typeof getOrCreatePermissionDetector>,
-  timeoutMs = PERMISSION_CLICK_RACE_TIMEOUT_MS
-): Promise<ReturnType<typeof detector.getPendingPermission>> {
-  const existing = detector.getPendingPermission();
-  if (existing) return existing;
-
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    const pending = detector.getPendingPermission();
-    if (pending) return pending;
-  }
-  return null;
-}
-
 async function clickWithEarlyDialogDetection(
   clickAction: () => Promise<void>,
   dialogManager: ReturnType<typeof getOrCreateDialogManager>
@@ -442,11 +410,15 @@ async function clickElementWithNonDomDetection(
     return stateXml + '\n' + renderNonDomSurface(surface);
   }
 
-  // 3. Permission request intercepted? Reported asynchronously by the injected
-  //    detector script over a CDP binding, so poll briefly. Unlike dialogs, a
-  //    permission prompt does not block the renderer, so recapture is safe.
+  // 3. Stabilization is the wait window the click already pays (network-idle +
+  //    DOM render). A permission requested by the click's handler fires over the
+  //    CDP binding *during* this window, so we stabilize first and then read the
+  //    flag — zero added latency, no fixed-interval poll. A permission prompt
+  //    does not block the renderer, so recapture afterward is safe.
   const permissionDetector = getOrCreatePermissionDetector(handle.page);
-  const pendingPermission = await waitForPendingPermission(permissionDetector);
+  await stabilizeAfterAction(handle.page);
+
+  const pendingPermission = permissionDetector.getPendingPermission();
   if (pendingPermission) {
     const surface = buildPermissionSurface(
       pendingPermission.permissions,
@@ -455,7 +427,6 @@ async function clickElementWithNonDomDetection(
     );
     setSurface(handle.page, surface);
 
-    await stabilizeAfterAction(handle.page);
     const captureResult = await captureSnapshot();
     ctx.getSnapshotStore().store(pageId, captureResult.snapshot);
     const stateManager = ctx.getStateManager(pageId);
@@ -465,15 +436,12 @@ async function clickElementWithNonDomDetection(
 
   if (!clickSucceeded) {
     // click failed and no non-DOM surface opened — capture best-effort state
-    await stabilizeAfterAction(handle.page);
     const captureResult = await captureSnapshot();
     ctx.getSnapshotStore().store(pageId, captureResult.snapshot);
     return ctx.getStateManager(pageId).generateResponse(captureResult.snapshot);
   }
 
   // === Normal DOM Click Flow ===
-  await stabilizeAfterAction(handle.page);
-
   const observations = await ctx
     .getObservationAccumulator()
     .getObservations(handle.page, actionStartTime);
