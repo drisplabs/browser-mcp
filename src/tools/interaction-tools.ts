@@ -30,6 +30,8 @@ import { executeAction, executeActionWithRetry, type CaptureSnapshotFn } from '.
 import { createActionCapture, prepareActionContext } from './action-context.js';
 import type { ToolContext } from './tool-context.types.js';
 import { getOrCreateDialogManager } from '../non-dom/dialog-manager.js';
+import { getOrCreatePermissionDetector } from '../non-dom/permission-detector.js';
+import { setPermissions } from '../non-dom/permission-manager.js';
 import {
   getSurface,
   setSurface,
@@ -38,6 +40,7 @@ import {
   buildDialogSurface,
   buildFilePickerSurface,
   buildFilePickerSurfaceForInput,
+  buildPermissionSurface,
   isNonDomEid,
   type NonDomSurface,
 } from '../non-dom/surface-store.js';
@@ -60,6 +63,12 @@ const ALLOWED_ROOTS: string[] = process.env.UPLOAD_ALLOWED_ROOTS
   : [];
 
 const DIALOG_CLICK_RACE_TIMEOUT_MS = 1500;
+/**
+ * Max time to wait after a click for an asynchronously-reported permission
+ * request. Kept short: it is the latency a click pays when it does NOT trigger
+ * a permission. The binding round-trip is typically well under 100ms.
+ */
+const PERMISSION_CLICK_RACE_TIMEOUT_MS = 500;
 
 // ============================================================================
 // Non-DOM Click Handler
@@ -82,6 +91,10 @@ async function handleNonDomClick(
       `No active non-DOM surface. The synthetic control "${eid}" is not available. ` +
         'Take a snapshot to see the current page state.'
     );
+  }
+
+  if (surface.kind === 'permission') {
+    return handlePermissionResolution(eid, surface, handle, pageId, ctx, captureSnapshot);
   }
 
   const dialogManager = getOrCreateDialogManager(handle.page);
@@ -217,6 +230,72 @@ async function handlePickerChoose(
   return afterNonDomResolution(handle, pageId, ctx, captureSnapshot);
 }
 
+/**
+ * Read deterministic geolocation coordinates from env. Used so an allowed
+ * geolocation permission resolves to fixed coords (no real device GPS).
+ * Defaults to 0/0 with 100m accuracy when unset — still deterministic.
+ */
+function getConfiguredGeolocation(): { latitude: number; longitude: number; accuracy: number } {
+  const parse = (raw: string | undefined, fallback: number): number => {
+    if (raw === undefined || raw.trim() === '') return fallback;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : fallback;
+  };
+  return {
+    latitude: parse(process.env.AWI_GEOLOCATION_LAT, 0),
+    longitude: parse(process.env.AWI_GEOLOCATION_LON, 0),
+    accuracy: parse(process.env.AWI_GEOLOCATION_ACCURACY, 100),
+  };
+}
+
+/** Handle the Allow/Block buttons on a permission-request surface. */
+async function handlePermissionResolution(
+  eid: string,
+  surface: NonDomSurface,
+  handle: PageHandle,
+  pageId: string,
+  ctx: ToolContext,
+  captureSnapshot: CaptureSnapshotFn
+): Promise<string> {
+  if (eid !== 'nd-permission-allow' && eid !== 'nd-permission-deny') {
+    throw new Error(
+      `Unknown non-DOM control: "${eid}". ` +
+        'Active surface kind is "permission". Use nd-permission-allow or nd-permission-deny.'
+    );
+  }
+
+  const granted = eid === 'nd-permission-allow';
+  const permissions = surface.permissionTypes ?? [];
+  const origin = surface.permissionOrigin ?? new URL(handle.page.url()).origin;
+  const requestId = surface.permissionRequestId;
+
+  // 1) Set the CDP permission state for the origin so the replayed native call
+  //    resolves deterministically (granted → success, denied → error).
+  await setPermissions(handle.cdp, permissions, origin, granted);
+
+  // 2) For an allowed geolocation request, install deterministic coordinates.
+  if (granted && permissions.includes('geolocation')) {
+    try {
+      await handle.cdp.send('Emulation.setGeolocationOverride', getConfiguredGeolocation());
+    } catch {
+      // Non-fatal: some targets may not support the override.
+    }
+  }
+
+  // 3) Replay the page-side native call now that CDP state is decided.
+  if (requestId) {
+    const detector = getOrCreatePermissionDetector(handle.page);
+    try {
+      await detector.resolvePermission(requestId);
+    } catch {
+      // Best-effort: the page context may have navigated away.
+    }
+  }
+
+  clearSurface(handle.page);
+  return afterNonDomResolution(handle, pageId, ctx, captureSnapshot);
+}
+
 // ============================================================================
 // Element Click with Non-DOM Detection
 // ============================================================================
@@ -238,6 +317,32 @@ async function waitForPendingDialog(
   }
 
   return false;
+}
+
+/**
+ * Poll the permission detector for a request reported by the injected script.
+ *
+ * Unlike dialogs (a synchronous CDP event), a permission request is reported
+ * asynchronously: the click runs page JS that calls a patched permission API,
+ * which queries the current state and then notifies the host over a CDP
+ * binding. That round-trip lands shortly *after* the click action resolves, so
+ * we poll briefly. The wait is bounded and returns the instant a request
+ * appears, so clicks that trigger no permission pay at most the short timeout.
+ */
+async function waitForPendingPermission(
+  detector: ReturnType<typeof getOrCreatePermissionDetector>,
+  timeoutMs = PERMISSION_CLICK_RACE_TIMEOUT_MS
+): Promise<ReturnType<typeof detector.getPendingPermission>> {
+  const existing = detector.getPendingPermission();
+  if (existing) return existing;
+
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const pending = detector.getPendingPermission();
+    if (pending) return pending;
+  }
+  return null;
 }
 
 async function clickWithEarlyDialogDetection(
@@ -329,6 +434,27 @@ async function clickElementWithNonDomDetection(
     setSurface(handle.page, surface);
 
     // File chooser interception is non-blocking — stabilization is safe
+    await stabilizeAfterAction(handle.page);
+    const captureResult = await captureSnapshot();
+    ctx.getSnapshotStore().store(pageId, captureResult.snapshot);
+    const stateManager = ctx.getStateManager(pageId);
+    const stateXml = stateManager.generateResponse(captureResult.snapshot);
+    return stateXml + '\n' + renderNonDomSurface(surface);
+  }
+
+  // 3. Permission request intercepted? Reported asynchronously by the injected
+  //    detector script over a CDP binding, so poll briefly. Unlike dialogs, a
+  //    permission prompt does not block the renderer, so recapture is safe.
+  const permissionDetector = getOrCreatePermissionDetector(handle.page);
+  const pendingPermission = await waitForPendingPermission(permissionDetector);
+  if (pendingPermission) {
+    const surface = buildPermissionSurface(
+      pendingPermission.permissions,
+      pendingPermission.origin,
+      pendingPermission.id
+    );
+    setSurface(handle.page, surface);
+
     await stabilizeAfterAction(handle.page);
     const captureResult = await captureSnapshot();
     ctx.getSnapshotStore().store(pageId, captureResult.snapshot);

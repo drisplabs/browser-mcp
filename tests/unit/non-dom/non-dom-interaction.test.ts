@@ -22,11 +22,16 @@ const {
   mockBuildDialogSurface,
   mockBuildFilePickerSurface,
   mockBuildFilePickerSurfaceForInput,
+  mockBuildPermissionSurface,
   mockIsNonDomEid,
   mockRenderNonDomSurface,
   mockStabilizeAfterAction,
   mockCaptureNavigationState,
   mockClickByBackendNodeId,
+  mockPermissionSurface,
+  mockSetPermissions,
+  mockPermissionDetector,
+  mockGetOrCreatePermissionDetector,
 } = vi.hoisted(() => {
   const mockDialogSurface = {
     kind: 'dialog' as const,
@@ -57,6 +62,25 @@ const {
     ],
   };
 
+  const mockPermissionSurface = {
+    kind: 'permission' as const,
+    blocking: true as const,
+    permissionTypes: ['geolocation'],
+    permissionOrigin: 'https://example.com',
+    permissionRequestId: 'perm-1',
+    controls: [
+      { eid: 'nd-permission-allow', kind: 'button' as const, label: 'Allow' },
+      { eid: 'nd-permission-deny', kind: 'button' as const, label: 'Block' },
+    ],
+  };
+
+  const mockSetPermissions = vi.fn().mockResolvedValue(undefined);
+  const mockPermissionDetector = {
+    resolvePermission: vi.fn().mockResolvedValue(undefined),
+    getPendingPermission: vi.fn().mockReturnValue(null),
+  };
+  const mockGetOrCreatePermissionDetector = vi.fn(() => mockPermissionDetector);
+
   const mockDialogManager = {
     attach: vi.fn().mockResolvedValue(undefined),
     getPendingDialog: vi.fn().mockReturnValue(null),
@@ -83,7 +107,7 @@ const {
       url: vi.fn().mockReturnValue('https://example.com'),
       bringToFront: vi.fn().mockResolvedValue(undefined),
     },
-    cdp: {},
+    cdp: { send: vi.fn().mockResolvedValue(undefined) },
     created_at: new Date(),
   };
 
@@ -94,6 +118,7 @@ const {
   const mockBuildDialogSurface = vi.fn().mockReturnValue(mockDialogSurface);
   const mockBuildFilePickerSurface = vi.fn().mockReturnValue(mockPickerSurface);
   const mockBuildFilePickerSurfaceForInput = vi.fn().mockReturnValue(mockPickerSurface);
+  const mockBuildPermissionSurface = vi.fn().mockReturnValue(mockPermissionSurface);
   const mockIsNonDomEid = vi.fn().mockReturnValue(false);
   const mockRenderNonDomSurface = vi.fn().mockReturnValue('<non_dom />');
   const mockStabilizeAfterAction = vi.fn().mockResolvedValue({ status: 'stable' });
@@ -113,11 +138,16 @@ const {
     mockBuildDialogSurface,
     mockBuildFilePickerSurface,
     mockBuildFilePickerSurfaceForInput,
+    mockBuildPermissionSurface,
     mockIsNonDomEid,
     mockRenderNonDomSurface,
     mockStabilizeAfterAction,
     mockCaptureNavigationState,
     mockClickByBackendNodeId,
+    mockPermissionSurface,
+    mockSetPermissions,
+    mockPermissionDetector,
+    mockGetOrCreatePermissionDetector,
   };
 });
 
@@ -158,6 +188,14 @@ vi.mock('../../../src/non-dom/dialog-manager.js', () => ({
   getOrCreateDialogManager: vi.fn(() => mockDialogManager),
 }));
 
+vi.mock('../../../src/non-dom/permission-detector.js', () => ({
+  getOrCreatePermissionDetector: mockGetOrCreatePermissionDetector,
+}));
+
+vi.mock('../../../src/non-dom/permission-manager.js', () => ({
+  setPermissions: mockSetPermissions,
+}));
+
 vi.mock('../../../src/non-dom/surface-store.js', () => ({
   getSurface: mockGetSurface,
   setSurface: mockSetSurface,
@@ -166,6 +204,7 @@ vi.mock('../../../src/non-dom/surface-store.js', () => ({
   buildDialogSurface: mockBuildDialogSurface,
   buildFilePickerSurface: mockBuildFilePickerSurface,
   buildFilePickerSurfaceForInput: mockBuildFilePickerSurfaceForInput,
+  buildPermissionSurface: mockBuildPermissionSurface,
   isNonDomEid: mockIsNonDomEid,
   getSurfaceControl: vi.fn(),
 }));
@@ -395,6 +434,74 @@ describe('click — nd-* EID routing (file picker)', () => {
   });
 });
 
+describe('click — nd-* EID routing (permission controls)', () => {
+  let ctx: ToolContext;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsNonDomEid.mockReturnValue(true);
+    mockGetSurface.mockReturnValue(mockPermissionSurface);
+    mockSetPermissions.mockResolvedValue(undefined);
+    mockPermissionDetector.resolvePermission.mockResolvedValue(undefined);
+    mockStabilizeAfterAction.mockResolvedValue({ status: 'stable' });
+    ctx = makeCtx();
+  });
+
+  it('nd-permission-allow grants the requested permissions for the origin', async () => {
+    await click({ page_id: 'test-page', eid: 'nd-permission-allow' }, ctx);
+    expect(mockSetPermissions).toHaveBeenCalledWith(
+      mockHandle.cdp,
+      ['geolocation'],
+      'https://example.com',
+      true
+    );
+    expect(mockClearSurface).toHaveBeenCalled();
+  });
+
+  it('nd-permission-deny denies the requested permissions for the origin', async () => {
+    await click({ page_id: 'test-page', eid: 'nd-permission-deny' }, ctx);
+    expect(mockSetPermissions).toHaveBeenCalledWith(
+      mockHandle.cdp,
+      ['geolocation'],
+      'https://example.com',
+      false
+    );
+    expect(mockClearSurface).toHaveBeenCalled();
+  });
+
+  it('replays the page-side native call via the detector on resolution', async () => {
+    await click({ page_id: 'test-page', eid: 'nd-permission-allow' }, ctx);
+    expect(mockGetOrCreatePermissionDetector).toHaveBeenCalledWith(mockHandle.page);
+    expect(mockPermissionDetector.resolvePermission).toHaveBeenCalledWith('perm-1');
+  });
+
+  it('installs a deterministic geolocation override when allowing geolocation', async () => {
+    await click({ page_id: 'test-page', eid: 'nd-permission-allow' }, ctx);
+    const call = mockHandle.cdp.send.mock.calls.find(
+      (c: unknown[]) => c[0] === 'Emulation.setGeolocationOverride'
+    );
+    expect(call).toBeDefined();
+    const params = call?.[1] as { latitude: number; longitude: number; accuracy: number };
+    expect(typeof params.latitude).toBe('number');
+    expect(typeof params.longitude).toBe('number');
+    expect(typeof params.accuracy).toBe('number');
+  });
+
+  it('does not install a geolocation override when denying', async () => {
+    await click({ page_id: 'test-page', eid: 'nd-permission-deny' }, ctx);
+    expect(mockHandle.cdp.send).not.toHaveBeenCalledWith(
+      'Emulation.setGeolocationOverride',
+      expect.anything()
+    );
+  });
+
+  it('throws for an unknown permission control EID', async () => {
+    await expect(click({ page_id: 'test-page', eid: 'nd-permission-bogus' }, ctx)).rejects.toThrow(
+      /permission/i
+    );
+  });
+});
+
 describe('click — DOM element: dialog detection post-click', () => {
   let ctx: ToolContext;
 
@@ -404,6 +511,7 @@ describe('click — DOM element: dialog detection post-click', () => {
     mockGetSurface.mockReturnValue(null);
     mockDialogManager.getPendingDialog.mockReturnValue(null);
     mockDialogManager.wasFileChooserOpenedSince.mockReturnValue(false);
+    mockPermissionDetector.getPendingPermission.mockReturnValue(null);
     ctx = makeCtx();
   });
 
@@ -464,11 +572,33 @@ describe('click — DOM element: dialog detection post-click', () => {
     expect(result).toContain('<non_dom />');
   });
 
+  it('detects a permission request after a DOM click and builds a permission surface', async () => {
+    // Regression (Bug #2): the detector stores a pending permission over its CDP
+    // binding, but clickElementWithNonDomDetection must READ it via
+    // getPendingPermission() and build the surface. Before the fix nothing
+    // consumed the pending request, so no <non_dom kind="permission"> ever rendered.
+    mockPermissionDetector.getPendingPermission.mockReturnValue({
+      id: 'perm-1',
+      permissions: ['geolocation'],
+      origin: 'https://example.com',
+    });
+
+    const result = await click({ page_id: 'test-page', eid: 'e1' }, ctx);
+
+    expect(mockBuildPermissionSurface).toHaveBeenCalledWith(
+      ['geolocation'],
+      'https://example.com',
+      'perm-1'
+    );
+    expect(mockSetSurface).toHaveBeenCalled();
+    expect(result).toContain('<non_dom />');
+  });
+
   it('takes the normal DOM path when no non-DOM surface is opened', async () => {
     const result = await click({ page_id: 'test-page', eid: 'e1' }, ctx);
 
     expect(mockStabilizeAfterAction).toHaveBeenCalled();
-    expect(mockClickByBackendNodeId).toHaveBeenCalledWith({}, 123, undefined);
+    expect(mockClickByBackendNodeId).toHaveBeenCalledWith(mockHandle.cdp, 123, undefined);
     expect(result).toBeDefined();
   });
 });

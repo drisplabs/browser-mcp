@@ -11,6 +11,7 @@ import {
   buildDialogSurface,
   buildFilePickerSurface,
   buildFilePickerSurfaceForInput,
+  buildPermissionSurface,
   isNonDomEid,
   getSurfaceControl,
 } from '../../../src/non-dom/surface-store.js';
@@ -166,6 +167,35 @@ describe('buildFilePickerSurfaceForInput', () => {
   it('creates selectMultiple surface for multi-file inputs', () => {
     const surface = buildFilePickerSurfaceForInput(99, true);
     expect(surface.pickerMode).toBe('selectMultiple');
+  });
+});
+
+describe('buildPermissionSurface', () => {
+  it('returns a permission surface with Allow + Block buttons', () => {
+    const surface = buildPermissionSurface(['geolocation'], 'https://example.com', 'req-1');
+    expect(surface.kind).toBe('permission');
+    expect(surface.blocking).toBe(true);
+    expect(surface.controls).toHaveLength(2);
+    const eids = surface.controls.map((c) => c.eid);
+    expect(eids).toEqual(['nd-permission-allow', 'nd-permission-deny']);
+    expect(surface.controls.every((c) => c.kind === 'button')).toBe(true);
+  });
+
+  it('carries the requested permission types, origin, and request id', () => {
+    const surface = buildPermissionSurface(
+      ['camera', 'microphone'],
+      'https://meet.example.com',
+      'req-42'
+    );
+    expect(surface.permissionTypes).toEqual(['camera', 'microphone']);
+    expect(surface.permissionOrigin).toBe('https://meet.example.com');
+    expect(surface.permissionRequestId).toBe('req-42');
+  });
+
+  it('labels the buttons Allow and Block', () => {
+    const surface = buildPermissionSurface(['notifications'], 'https://example.com', 'req-2');
+    const labels = surface.controls.map((c) => c.label);
+    expect(labels).toEqual(['Allow', 'Block']);
   });
 });
 

@@ -7,7 +7,11 @@ import {
   renderNonDomSurface,
   renderNonDomControlDetails,
 } from '../../../src/non-dom/surface-xml.js';
-import { buildDialogSurface, buildFilePickerSurface } from '../../../src/non-dom/surface-store.js';
+import {
+  buildDialogSurface,
+  buildFilePickerSurface,
+  buildPermissionSurface,
+} from '../../../src/non-dom/surface-store.js';
 import type { PendingDialog } from '../../../src/non-dom/dialog-manager.js';
 
 const alertDialog = (): PendingDialog => ({
@@ -112,6 +116,38 @@ describe('renderNonDomSurface — file-picker', () => {
   });
 });
 
+describe('renderNonDomSurface — permission', () => {
+  it('renders permission surface with Allow and Block buttons', () => {
+    const surface = buildPermissionSurface(['geolocation'], 'https://example.com', 'req-1');
+    const xml = renderNonDomSurface(surface);
+
+    expect(xml).toContain('kind="permission"');
+    expect(xml).toContain('modal="true"');
+    expect(xml).toContain('permissions="geolocation"');
+    expect(xml).toContain('origin="https://example.com"');
+    expect(xml).toContain('eid="nd-permission-allow"');
+    expect(xml).toContain('eid="nd-permission-deny"');
+    expect(xml).toContain('<dom_blocked reason="permission" />');
+  });
+
+  it('joins multiple requested permissions with commas', () => {
+    const surface = buildPermissionSurface(
+      ['camera', 'microphone'],
+      'https://meet.example.com',
+      'req-2'
+    );
+    const xml = renderNonDomSurface(surface);
+    expect(xml).toContain('permissions="camera,microphone"');
+  });
+
+  it('escapes XML special characters in origin', () => {
+    const surface = buildPermissionSurface(['notifications'], 'https://x.com/?a=1&b=2', 'req-3');
+    const xml = renderNonDomSurface(surface);
+    expect(xml).toContain('&amp;');
+    expect(xml).not.toContain('a=1&b=2');
+  });
+});
+
 describe('renderNonDomControlDetails', () => {
   it('returns node with synthetic="true" for a dialog button', () => {
     const surface = buildDialogSurface(confirmDialog());
@@ -151,5 +187,18 @@ describe('renderNonDomControlDetails', () => {
     const xml = renderNonDomControlDetails('nd-picker-path', surface);
     expect(xml).toContain('eid="nd-picker-path"');
     expect(xml).toContain('synthetic="true"');
+  });
+
+  it('works for permission controls and describes the request', () => {
+    const surface = buildPermissionSurface(
+      ['camera', 'microphone'],
+      'https://example.com',
+      'req-9'
+    );
+    const xml = renderNonDomControlDetails('nd-permission-allow', surface);
+    expect(xml).toContain('eid="nd-permission-allow"');
+    expect(xml).toContain('synthetic="true"');
+    expect(xml).toContain('camera, microphone');
+    expect(xml).toContain('https://example.com');
   });
 });

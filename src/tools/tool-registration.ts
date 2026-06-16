@@ -26,7 +26,6 @@ import { inspectCanvas } from './canvas-tools.js';
 import { getFormUnderstanding, getFieldContext } from './form-tools.js';
 import { readPage } from './readability-tools.js';
 import { listNetworkCalls, searchNetworkCalls } from './network-tools.js';
-import { grantPermission } from './permission-tool.js';
 
 // Import all input schemas
 import {
@@ -51,7 +50,6 @@ import {
   TakeScreenshotInputSchemaBase,
   InspectCanvasInputSchemaBase,
   ReadPageInputSchema,
-  GrantPermissionInputSchemaBase,
 } from './tool-schemas.js';
 import { GetFormUnderstandingInputSchema, GetFieldContextInputSchema } from './form-tools.js';
 import { ListNetworkCallsInputSchema, SearchNetworkCallsInputSchema } from './tool-schemas.js';
@@ -381,21 +379,5 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
       inputSchema: SearchNetworkCallsInputSchema.shape,
     },
     wrap(searchNetworkCalls)
-  );
-
-  // ============================================================================
-  // NON-DOM INTERACTION TOOLS
-  // ============================================================================
-
-  server.registerTool(
-    'grant_permission',
-    {
-      title: 'Grant Permission',
-      description:
-        'Grant or deny browser permissions (camera, microphone, geolocation, notifications, clipboard, etc.) ' +
-        'for the active origin so permission-gated flows proceed deterministically.',
-      inputSchema: GrantPermissionInputSchemaBase.shape,
-    },
-    wrap(grantPermission)
   );
 }

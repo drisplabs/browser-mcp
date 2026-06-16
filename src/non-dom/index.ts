@@ -6,6 +6,7 @@ export {
   buildDialogSurface,
   buildFilePickerSurface,
   buildFilePickerSurfaceForInput,
+  buildPermissionSurface,
   isNonDomEid,
   getSurfaceControl,
 } from './surface-store.js';
@@ -36,3 +37,12 @@ export type { DownloadEntry, DownloadStatus } from './download-manager.js';
 
 export { setPermissions } from './permission-manager.js';
 export type { BrowserPermission } from './permission-manager.js';
+
+export {
+  PermissionDetector,
+  getOrCreatePermissionDetector,
+  removePermissionDetector,
+  buildPermissionDetectorScript,
+  PERMISSION_BINDING_NAME,
+} from './permission-detector.js';
+export type { PendingPermission } from './permission-detector.js';

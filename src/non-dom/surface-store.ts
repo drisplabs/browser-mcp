@@ -11,13 +11,14 @@
 
 import type { Page } from 'puppeteer-core';
 import type { DialogType, PendingDialog, FileChooserState } from './dialog-manager.js';
+import type { BrowserPermission } from './permission-manager.js';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export type NonDomControlKind = 'button' | 'input' | 'text';
-export type NonDomSurfaceKind = 'dialog' | 'file-picker';
+export type NonDomSurfaceKind = 'dialog' | 'file-picker' | 'permission';
 
 export interface NonDomControl {
   /** Synthetic EID — always starts with "nd-" */
@@ -50,6 +51,14 @@ export interface NonDomSurface {
   pickerMode?: string;
   /** CDP backend node ID of the file input (for DOM.setFileInputFiles) */
   pickerBackendNodeId?: number;
+
+  // Permission-specific context
+  /** Requested browser permissions (e.g. ['geolocation'], ['camera','microphone']) */
+  permissionTypes?: BrowserPermission[];
+  /** Origin the permission was requested for (e.g. "https://example.com") */
+  permissionOrigin?: string;
+  /** Detector request id used to replay the pending native call on resolution */
+  permissionRequestId?: string;
 }
 
 // ============================================================================
@@ -196,6 +205,34 @@ export function buildFilePickerSurfaceForInput(
   allowsMultiple: boolean
 ): NonDomSurface {
   return buildFilePickerSurface(backendNodeId, allowsMultiple ? 'selectMultiple' : 'selectSingle');
+}
+
+/**
+ * Build a permission-request surface from a pending permission prompt.
+ *
+ * Controls:
+ * - Allow button  (nd-permission-allow)
+ * - Block button  (nd-permission-deny)
+ *
+ * The requested permission set (e.g. camera + microphone) and origin are carried
+ * as surface context so the agent can perceive exactly what is being requested.
+ */
+export function buildPermissionSurface(
+  permissionTypes: BrowserPermission[],
+  origin: string,
+  requestId: string
+): NonDomSurface {
+  return {
+    kind: 'permission',
+    blocking: true,
+    controls: [
+      { eid: 'nd-permission-allow', kind: 'button', label: 'Allow' },
+      { eid: 'nd-permission-deny', kind: 'button', label: 'Block' },
+    ],
+    permissionTypes,
+    permissionOrigin: origin,
+    permissionRequestId: requestId,
+  };
 }
 
 /**

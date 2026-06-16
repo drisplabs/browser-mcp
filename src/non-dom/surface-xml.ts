@@ -17,6 +17,13 @@
  *     <ctrl eid="nd-picker-cancel" kind="button" label="Cancel" />
  *   </non_dom>
  *   <dom_blocked reason="file-picker" />
+ *
+ * Format (permission):
+ *   <non_dom kind="permission" modal="true" permissions="camera,microphone" origin="https://example.com">
+ *     <ctrl eid="nd-permission-allow" kind="button" label="Allow" />
+ *     <ctrl eid="nd-permission-deny" kind="button" label="Block" />
+ *   </non_dom>
+ *   <dom_blocked reason="permission" />
  */
 
 import { escapeXml } from '../lib/text-utils.js';
@@ -38,6 +45,19 @@ export function renderNonDomSurface(surface: NonDomSurface): string {
     }
     lines.push('</non_dom>');
     lines.push('<dom_blocked reason="dialog" />');
+  } else if (surface.kind === 'permission') {
+    const permsAttr = surface.permissionTypes?.length
+      ? ` permissions="${escapeXml(surface.permissionTypes.join(','))}"`
+      : '';
+    const originAttr = surface.permissionOrigin
+      ? ` origin="${escapeXml(surface.permissionOrigin)}"`
+      : '';
+    lines.push(`<non_dom kind="permission" modal="true"${permsAttr}${originAttr}>`);
+    for (const ctrl of surface.controls) {
+      lines.push(`  ${renderControl(ctrl)}`);
+    }
+    lines.push('</non_dom>');
+    lines.push('<dom_blocked reason="permission" />');
   } else {
     // file-picker
     const modeAttr = surface.pickerMode ? ` mode="${escapeXml(surface.pickerMode)}"` : '';
@@ -78,10 +98,15 @@ export function renderNonDomControlDetails(eid: string, surface: NonDomSurface):
   }
 
   // Build surfaceDesc as raw text — escapeXml is applied once when embedding in XML below.
-  const surfaceDesc =
-    surface.kind === 'dialog'
-      ? `JavaScript ${surface.dialogType ?? 'dialog'}: "${surface.dialogMessage ?? ''}"`
-      : `File picker (${surface.pickerMode ?? 'selectSingle'})`;
+  let surfaceDesc: string;
+  if (surface.kind === 'dialog') {
+    surfaceDesc = `JavaScript ${surface.dialogType ?? 'dialog'}: "${surface.dialogMessage ?? ''}"`;
+  } else if (surface.kind === 'permission') {
+    const perms = surface.permissionTypes?.join(', ') ?? '';
+    surfaceDesc = `Permission request (${perms}) from ${surface.permissionOrigin ?? 'page'}`;
+  } else {
+    surfaceDesc = `File picker (${surface.pickerMode ?? 'selectSingle'})`;
+  }
 
   const lines: string[] = [
     `<node eid="${escapeXml(eid)}" kind="${ctrl.kind}" region="non_dom" x="0" y="0" w="0" h="0" synthetic="true">`,

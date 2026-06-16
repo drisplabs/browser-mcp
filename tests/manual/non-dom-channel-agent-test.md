@@ -358,19 +358,24 @@ Tool: click
 
 ---
 
-## Test 4a — Geolocation permission (grant then request)
+## Permissions — no `grant_permission` tool
 
-First grant the permission:
+There is no `grant_permission` tool. Permission requests surface the same way as
+dialogs and file pickers: when the page calls a permission-gated API
+(`geolocation`, `Notification.requestPermission`, `getUserMedia`, clipboard) and
+the permission is still undecided, a **non-DOM permission surface** appears with
+two controls — `nd-permission-allow` ("Allow") and `nd-permission-deny`
+("Block"). The page-side call stays pending until the agent clicks one. Clicking
+Allow grants via CDP (and, for geolocation, applies the deterministic coordinates
+from `AWI_GEOLOCATION_LAT`/`LON`/`ACCURACY`, default `0,0,100`); clicking Block
+denies. Already-granted/denied permissions pass straight through with no surface.
 
-```
-Tool: grant_permission
-  permissions: ["geolocation"]
-  granted:     true
-```
+> **Camera/microphone (4c/4d):** launch Chrome with
+> `--use-fake-device-for-media-stream` so `getUserMedia` resolves without real
+> hardware. Without it the grant succeeds but no track is produced and 4c/4d may
+> report an error even on Allow.
 
-**Expected:** State response returned (no error).
-
-Then click the request button:
+## Test 4a — Geolocation permission (allow)
 
 ```
 Tool: find
@@ -382,17 +387,25 @@ Tool: click
   eid: <eid>
 ```
 
-**Expected:** Status box under "4a" shows coordinates (no permission prompt dialog appeared).
+**Expected:** A non-DOM permission surface appears (`kind="permission"`,
+`permissions="geolocation"`). The page is blocked until resolved.
+
+```
+Tool: snapshot
+```
+
+```
+Tool: click
+  eid: nd-permission-allow
+```
+
+**Expected:** Surface clears; status box under "4a" shows coordinates matching the
+configured `AWI_GEOLOCATION_*` values (default lat 0.0000, lon 0.0000). No native
+permission prompt appeared.
 
 ---
 
-## Test 4b — Notifications permission (deny then request)
-
-```
-Tool: grant_permission
-  permissions: ["notifications"]
-  granted:     false
-```
+## Test 4b — Notifications permission (deny)
 
 ```
 Tool: find
@@ -404,7 +417,64 @@ Tool: click
   eid: <eid>
 ```
 
-**Expected:** Status box shows `○ Permission: denied` (no native permission prompt appeared).
+**Expected:** A non-DOM permission surface appears (`permissions="notifications"`).
+
+```
+Tool: click
+  eid: nd-permission-deny
+```
+
+**Expected:** Surface clears; status box under "4b" shows `○ Permission: denied`.
+No native permission prompt appeared.
+
+---
+
+## Test 4c — Camera permission (allow)
+
+> Requires `--use-fake-device-for-media-stream` (see note above).
+
+```
+Tool: find
+  label: "Request Camera"
+```
+
+```
+Tool: click
+  eid: <eid>
+```
+
+**Expected:** A non-DOM permission surface appears exposing the requested set
+(`permissions="camera"`).
+
+```
+Tool: click
+  eid: nd-permission-allow
+```
+
+**Expected:** Surface clears; status box under "4c" shows `✓ Granted — N track(s)`.
+
+---
+
+## Test 4d — Microphone permission (deny)
+
+```
+Tool: find
+  label: "Request Microphone"
+```
+
+```
+Tool: click
+  eid: <eid>
+```
+
+**Expected:** A non-DOM permission surface appears (`permissions="microphone"`).
+
+```
+Tool: click
+  eid: nd-permission-deny
+```
+
+**Expected:** Surface clears; status box under "4d" shows `✗ Denied or error`.
 
 ---
 
@@ -440,5 +510,7 @@ All items in the result list should show ✓. Items showing ✗ indicate a regre
 | 2c  | Prompt answered via nd-dialog-input     | Text echoed in page       |
 | 2d  | nd-dialog-ok with no active surface     | Helpful error             |
 | 3a  | Download routed to configured directory | File appears on disk      |
-| 4a  | Geolocation granted — no prompt         | Coordinates returned      |
-| 4b  | Notifications denied — no prompt        | Permission: denied        |
+| 4a  | Geolocation surface → Allow             | Coordinates returned      |
+| 4b  | Notifications surface → Block           | Permission: denied        |
+| 4c  | Camera surface → Allow                  | Stream granted            |
+| 4d  | Microphone surface → Block              | Permission denied/error   |

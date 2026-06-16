@@ -27,6 +27,10 @@ import { getOrCreateRecorder, removeRecorder } from './page-network-recorder.js'
 import { getOrCreateDialogManager, removeDialogManager } from '../non-dom/dialog-manager.js';
 import { getOrCreateDownloadManager, removeDownloadManager } from '../non-dom/download-manager.js';
 import {
+  getOrCreatePermissionDetector,
+  removePermissionDetector,
+} from '../non-dom/permission-detector.js';
+import {
   extractErrorMessage,
   isValidHttpUrl,
   isValidWsUrl,
@@ -1280,6 +1284,17 @@ export class SessionManager {
         });
       });
 
+      // Wire permission detection: monkey-patches permission-triggering APIs so
+      // undecided requests surface as non-DOM "permission" surfaces the agent
+      // resolves via click. Best-effort, same as the dialog channel.
+      const permissionDetector = getOrCreatePermissionDetector(page);
+      void permissionDetector.attach(handle.cdp).catch((err) => {
+        this.logger.debug('PermissionDetector attach failed (non-fatal)', {
+          page_id: handle.page_id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+
       // Route downloads to AWI_DOWNLOAD_DIR when configured. Opt-in: when the
       // dir is unset we leave the browser's default download behavior intact.
       if (this.downloadDir) {
@@ -1298,6 +1313,7 @@ export class SessionManager {
       removeRecorder(page);
       removeDialogManager(page);
       removeDownloadManager(page);
+      removePermissionDetector(page);
     });
   }
 }
