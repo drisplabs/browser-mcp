@@ -6,6 +6,12 @@
       "sourceType": "github",
       "skillPath": "skills/agent-web-interface/SKILL.md",
       "computedHash": "76952e2c466a5942e97f901fc669dce29ff19ef4eb9c2c64e2bbb633a6235e2c"
+    },
+    "diagnose": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/diagnose/SKILL.md",
+      "computedHash": "15939a26f86edec2d4862042b8564e5a062cb81d04e047a0cea6305c8830b5f5"
     }
   }
 }
