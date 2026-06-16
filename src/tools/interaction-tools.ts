@@ -49,12 +49,7 @@ import { stabilizeAfterAction } from './action-stabilization.js';
 import { captureNavigationState } from './navigation-detection.js';
 import { ATTACHMENT_SIGNIFICANCE_THRESHOLD } from '../observation/observation.types.js';
 import { validateFilePaths, FileValidationError } from '../non-dom/file-path-validator.js';
-import {
-  resolveAndUploadFiles,
-  resolveFileInputTarget,
-  FileInputNotFoundError,
-  type FileInputTarget,
-} from '../non-dom/file-input-resolver.js';
+import { resolveAndUploadFiles } from '../non-dom/file-input-resolver.js';
 import type { PageHandle } from '../browser/page-registry.js';
 
 /** Configured allowed roots for file uploads. Empty = no restriction. */
@@ -559,27 +554,16 @@ export async function click(
     const node = ctx.resolveElementByEid(pageId, input.eid!, snap);
     const attrs = node.attributes as Record<string, unknown> | undefined;
 
-    let fileInputTarget: Pick<FileInputTarget, 'backendNodeId' | 'allowsMultiple'> | null = null;
+    // Direct file-input fast path: when the snapshot already says this node is an
+    // input[type=file], build the picker surface without dispatching a real click
+    // (no native picker, no CDP DOM walk). Indirect triggers — a styled button, a
+    // <label for>, a dropzone, a hidden input — are NOT probed speculatively here;
+    // they emit Page.fileChooserOpened on the real click and are caught by the
+    // wasFileChooserOpenedSince flag in clickElementWithNonDomDetection.
     if (attrs?.input_type === 'file') {
-      fileInputTarget = {
-        backendNodeId: node.backend_node_id,
-        allowsMultiple: (attrs?.multiple as boolean | undefined) !== undefined,
-      };
-    } else if (['button', 'input', 'text'].includes(node.kind)) {
-      try {
-        fileInputTarget = await resolveFileInputTarget(handleRef.current.cdp, node.backend_node_id);
-      } catch (err) {
-        if (!(err instanceof FileInputNotFoundError)) {
-          throw err;
-        }
-      }
-    }
-
-    // File input: return file-picker surface instead of native picker or guidance
-    if (fileInputTarget !== null) {
       const surface = buildFilePickerSurfaceForInput(
-        fileInputTarget.backendNodeId,
-        fileInputTarget.allowsMultiple
+        node.backend_node_id,
+        (attrs?.multiple as boolean | undefined) !== undefined
       );
       setSurface(handleRef.current.page, surface);
 

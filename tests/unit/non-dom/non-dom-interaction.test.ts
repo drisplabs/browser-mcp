@@ -602,6 +602,18 @@ describe('click — DOM element: dialog detection post-click', () => {
     expect(result).toBeDefined();
   });
 
+  it('issues no DOM.resolveNode / DOM.describeNode for a plain button click', async () => {
+    // Slice 2 acceptance: the speculative resolveFileInputTarget walk is gone. A
+    // plain (non-file) button click must not probe for a hidden file input via
+    // DOM.resolveNode / DOM.describeNode. Indirect file triggers are caught by
+    // the Page.fileChooserOpened interception flag, not a per-click CDP walk.
+    await click({ page_id: 'test-page', eid: 'e1' }, ctx);
+
+    const cdpMethods = mockHandle.cdp.send.mock.calls.map((c: unknown[]) => c[0]);
+    expect(cdpMethods).not.toContain('DOM.resolveNode');
+    expect(cdpMethods).not.toContain('DOM.describeNode');
+  });
+
   it('reads the permission flag once after stabilization (no fixed-interval poll)', async () => {
     // Slice 1 regression: permission detection must be a single flag read AFTER
     // stabilizeAfterAction, not a loop that polls getPendingPermission() on a timer.
