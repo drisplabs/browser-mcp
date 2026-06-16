@@ -305,25 +305,6 @@
       }
     },
     {
-      "name": "act_upload",
-      "description": "Uploads files to a file input element. Files must be in allowed directories.",
-      "inputSchema": {
-        "type": "object",
-        "required": ["target", "files"],
-        "properties": {
-          "target": {
-            "type": "object",
-            "description": "ElementRef for file input"
-          },
-          "files": {
-            "type": "array",
-            "items": { "type": "string" },
-            "description": "Array of file paths to upload"
-          }
-        }
-      }
-    },
-    {
       "name": "nav_goto",
       "description": "Navigates to a URL. Waits for initial load.",
       "inputSchema": {

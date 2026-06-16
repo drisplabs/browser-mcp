@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Non-DOM Interaction Channel — Manual Test Page</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        padding: 32px;
+        max-width: 840px;
+        margin: 0 auto;
+        color: #111;
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 4px;
+      }
+      .subtitle {
+        color: #666;
+        margin-bottom: 32px;
+        font-size: 0.9rem;
+      }
+      h2 {
+        font-size: 1.1rem;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 6px;
+        margin-top: 40px;
+      }
+      .section {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      .section-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        margin-bottom: 12px;
+      }
+      button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: background 0.15s;
+      }
+      button:hover {
+        background: #f3f4f6;
+      }
+      button.primary {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
+      }
+      button.primary:hover {
+        background: #1d4ed8;
+      }
+      button.danger {
+        background: #dc2626;
+        color: white;
+        border-color: #dc2626;
+      }
+      button.danger:hover {
+        background: #b91c1c;
+      }
+      .file-input-hidden {
+        display: none;
+      }
+      .drop-zone {
+        border: 2px dashed #d1d5db;
+        border-radius: 8px;
+        padding: 24px;
+        text-align: center;
+        color: #6b7280;
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+      }
+      .drop-zone:hover {
+        border-color: #2563eb;
+        background: #eff6ff;
+      }
+      .drop-zone input[type='file'] {
+        display: none;
+      }
+      .status-box {
+        margin-top: 12px;
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-family: monospace;
+        background: #1f2937;
+        color: #d1fae5;
+        min-height: 36px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .status-box.empty {
+        color: #6b7280;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      label.upload-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+        font-size: 0.875rem;
+      }
+      label.upload-label:hover {
+        background: #f3f4f6;
+      }
+      .result-list {
+        margin: 8px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .result-list li {
+        padding: 4px 10px;
+        background: #dcfce7;
+        border-radius: 4px;
+        margin-bottom: 4px;
+        font-size: 0.85rem;
+        color: #166534;
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+      .badge.green {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .badge.red {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .badge.blue {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .badge.gray {
+        background: #f3f4f6;
+        color: #374151;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Non-DOM Interaction Channel</h1>
+    <p class="subtitle">Manual test page for upload, dialog, permission, and download tools.</p>
+
+    <!-- ═══════════════════════════════════════════════════════
+     SECTION 1 — FILE UPLOAD
+     ═══════════════════════════════════════════════════════ -->
+    <h2>1 · File Upload</h2>
+
+    <!-- 1a: Direct file input -->
+    <div class="section">
+      <div class="section-label">1a — Direct <code>&lt;input type="file"&gt;</code></div>
+      <div class="row">
+        <input id="direct-file-input" type="file" accept="*/*" aria-label="Direct file input" />
+      </div>
+      <div class="status-box empty" id="direct-status">Waiting…</div>
+    </div>
+
+    <!-- 1b: Styled button (hidden input) -->
+    <div class="section">
+      <div class="section-label">
+        1b — Styled upload button (hidden <code>&lt;input type="file"&gt;</code>)
+      </div>
+      <div class="row">
+        <button
+          id="styled-upload-btn"
+          class="primary"
+          onclick="document.getElementById('hidden-file-input').click()"
+        >
+          ⬆ Upload File
+        </button>
+        <input
+          id="hidden-file-input"
+          class="file-input-hidden"
+          type="file"
+          aria-label="Hidden file input behind styled button"
+        />
+      </div>
+      <div class="status-box empty" id="styled-status">Waiting…</div>
+    </div>
+
+    <!-- 1c: Label-associated input -->
+    <div class="section">
+      <div class="section-label">
+        1c — <code>&lt;label for=...&gt;</code> associated with file input
+      </div>
+      <div class="row">
+        <label for="labelled-file-input" class="upload-label">📎 Choose via Label</label>
+        <input
+          id="labelled-file-input"
+          class="file-input-hidden"
+          type="file"
+          aria-label="Label-associated file input"
+        />
+      </div>
+      <div class="status-box empty" id="label-status">Waiting…</div>
+    </div>
+
+    <!-- 1d: Drop-zone container -->
+    <div class="section">
+      <div class="section-label">1d — Dropzone container wrapping a hidden input</div>
+      <div
+        class="drop-zone"
+        id="drop-zone"
+        onclick="document.getElementById('dropzone-file-input').click()"
+      >
+        <input id="dropzone-file-input" type="file" aria-label="Dropzone file input" />
+        <div>Drop files here or click to browse</div>
+      </div>
+      <div class="status-box empty" id="dropzone-status">Waiting…</div>
+    </div>
+
+    <!-- 1e: Multiple file input -->
+    <div class="section">
+      <div class="section-label">1e — Multiple file input</div>
+      <div class="row">
+        <input id="multi-file-input" type="file" multiple aria-label="Multiple file input" />
+      </div>
+      <div class="status-box empty" id="multi-status">Waiting…</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+     SECTION 2 — JAVASCRIPT DIALOGS
+     ═══════════════════════════════════════════════════════ -->
+    <h2>2 · JavaScript Dialogs</h2>
+
+    <div class="section">
+      <div class="section-label">2a — alert()</div>
+      <div class="row">
+        <button onclick="triggerAlert()">Trigger alert()</button>
+      </div>
+      <div class="status-box empty" id="alert-status">Waiting…</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">2b — confirm()</div>
+      <div class="row">
+        <button onclick="triggerConfirm()">Trigger confirm()</button>
+      </div>
+      <div class="status-box empty" id="confirm-status">
+        Waiting… (result will show after dialog resolves)
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">2c — prompt()</div>
+      <div class="row">
+        <button onclick="triggerPrompt()">Trigger prompt()</button>
+      </div>
+      <div class="status-box empty" id="prompt-status">
+        Waiting… (entered text will appear here)
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+     SECTION 3 — DOWNLOAD
+     ═══════════════════════════════════════════════════════ -->
+    <h2>3 · Download</h2>
+
+    <div class="section">
+      <div class="section-label">3a — Download a generated text file</div>
+      <div class="row">
+        <button class="primary" onclick="downloadFile()">⬇ Download test.txt</button>
+        <button onclick="downloadCSV()">⬇ Download data.csv</button>
+      </div>
+      <div class="status-box empty" id="download-status">Waiting…</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+     SECTION 4 — PERMISSION REQUEST (simulated)
+     ═══════════════════════════════════════════════════════ -->
+    <h2>4 · Permission Request</h2>
+
+    <div class="section">
+      <div class="section-label">4a — Request Geolocation permission via JS API</div>
+      <div class="row">
+        <button onclick="requestGeolocation()">Request Geolocation</button>
+      </div>
+      <div class="status-box empty" id="geo-status">Waiting…</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">4b — Request Notifications permission via JS API</div>
+      <div class="row">
+        <button onclick="requestNotifications()">Request Notifications</button>
+      </div>
+      <div class="status-box empty" id="notif-status">Waiting…</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">4c — Request Camera permission via getUserMedia</div>
+      <div class="row">
+        <button onclick="requestCamera()">Request Camera</button>
+      </div>
+      <div class="status-box empty" id="camera-status">Waiting…</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">4d — Request Microphone permission via getUserMedia</div>
+      <div class="row">
+        <button onclick="requestMicrophone()">Request Microphone</button>
+      </div>
+      <div class="status-box empty" id="mic-status">Waiting…</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+     STATUS BOARD
+     ═══════════════════════════════════════════════════════ -->
+    <h2>Overall Status</h2>
+    <div class="section">
+      <ul class="result-list" id="overall-results">
+        <li style="background: #f3f4f6; color: #374151">No tests completed yet.</li>
+      </ul>
+    </div>
+
+    <script>
+      // ── Utilities ──────────────────────────────────────────────────────────────
+      function setStatus(id, text, success) {
+        const el = document.getElementById(id);
+        el.textContent = text;
+        el.classList.remove('empty');
+        el.style.background = success === undefined ? '#1f2937' : success ? '#14532d' : '#7f1d1d';
+        el.style.color = success === undefined ? '#d1fae5' : success ? '#bbf7d0' : '#fecaca';
+      }
+
+      function recordResult(label, passed) {
+        const list = document.getElementById('overall-results');
+        const placeholder = list.querySelector('li[style]');
+        if (placeholder) placeholder.remove();
+        const li = document.createElement('li');
+        li.style.background = passed ? '#dcfce7' : '#fee2e2';
+        li.style.color = passed ? '#166534' : '#991b1b';
+        li.textContent = `${passed ? '✓' : '✗'} ${label}`;
+        list.appendChild(li);
+      }
+
+      // ── Upload change listeners ────────────────────────────────────────────────
+      function attachUploadListener(inputId, statusId, label) {
+        document.getElementById(inputId).addEventListener('change', function () {
+          const files = Array.from(this.files)
+            .map((f) => f.name)
+            .join(', ');
+          if (files) {
+            setStatus(statusId, `✓ Files received: ${files}`, true);
+            recordResult(label + ': ' + files, true);
+          }
+        });
+      }
+
+      attachUploadListener('direct-file-input', 'direct-status', '1a Direct input');
+      attachUploadListener('hidden-file-input', 'styled-status', '1b Styled button');
+      attachUploadListener('labelled-file-input', 'label-status', '1c Label input');
+      attachUploadListener('dropzone-file-input', 'dropzone-status', '1d Dropzone');
+      attachUploadListener('multi-file-input', 'multi-status', '1e Multi input');
+
+      // ── Dialog triggers ────────────────────────────────────────────────────────
+      function triggerAlert() {
+        setStatus('alert-status', 'alert() triggered — waiting for handle_dialog…');
+        alert('This is a test alert from the non-DOM channel test page.');
+        setStatus('alert-status', '✓ alert() dismissed successfully', true);
+        recordResult('2a Alert dismissed', true);
+      }
+
+      function triggerConfirm() {
+        setStatus('confirm-status', 'confirm() triggered — waiting for handle_dialog…');
+        const result = confirm('Do you confirm this test action?');
+        if (result) {
+          setStatus('confirm-status', '✓ confirm() accepted (result = true)', true);
+          recordResult('2b Confirm accepted', true);
+        } else {
+          setStatus('confirm-status', '○ confirm() dismissed (result = false)');
+          recordResult('2b Confirm dismissed', true);
+        }
+      }
+
+      function triggerPrompt() {
+        setStatus('prompt-status', 'prompt() triggered — waiting for handle_dialog with text…');
+        const answer = prompt('Enter a test value:', 'default-value');
+        if (answer !== null) {
+          setStatus('prompt-status', `✓ prompt() answered: "${answer}"`, true);
+          recordResult(`2c Prompt answered: "${answer}"`, true);
+        } else {
+          setStatus('prompt-status', '○ prompt() cancelled');
+          recordResult('2c Prompt cancelled', true);
+        }
+      }
+
+      // ── Download helpers ───────────────────────────────────────────────────────
+      function downloadBlob(content, filename, type) {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        setStatus('download-status', `⬇ Download triggered: ${filename}`, true);
+        recordResult('3a Download: ' + filename, true);
+      }
+
+      function downloadFile() {
+        downloadBlob(
+          'Hello from the non-DOM channel test page!\nTimestamp: ' + new Date().toISOString(),
+          'test.txt',
+          'text/plain'
+        );
+      }
+
+      function downloadCSV() {
+        downloadBlob(
+          'name,value,timestamp\ntest,42,' + new Date().toISOString(),
+          'data.csv',
+          'text/csv'
+        );
+      }
+
+      // ── Permission helpers ─────────────────────────────────────────────────────
+      function requestGeolocation() {
+        setStatus('geo-status', 'Requesting geolocation…');
+        if (!navigator.geolocation) {
+          setStatus('geo-status', '✗ Geolocation API not available', false);
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setStatus(
+              'geo-status',
+              `✓ Granted — lat ${pos.coords.latitude.toFixed(4)}, lon ${pos.coords.longitude.toFixed(4)}`,
+              true
+            );
+            recordResult('4a Geolocation granted', true);
+          },
+          (err) => {
+            setStatus('geo-status', `✗ Denied or error: ${err.message}`, false);
+            recordResult('4a Geolocation denied/error: ' + err.message, false);
+          }
+        );
+      }
+
+      function requestNotifications() {
+        setStatus('notif-status', 'Requesting notification permission…');
+        Notification.requestPermission().then((perm) => {
+          const ok = perm === 'granted';
+          setStatus('notif-status', `${ok ? '✓' : '○'} Permission: ${perm}`, ok);
+          recordResult('4b Notifications: ' + perm, ok);
+        });
+      }
+
+      function requestMedia(kind, statusId, label, constraints) {
+        setStatus(statusId, `Requesting ${kind}…`);
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setStatus(statusId, '✗ getUserMedia API not available', false);
+          return;
+        }
+        navigator.mediaDevices.getUserMedia(constraints).then(
+          (stream) => {
+            setStatus(statusId, `✓ Granted — ${stream.getTracks().length} track(s)`, true);
+            recordResult(`${label} granted`, true);
+            stream.getTracks().forEach((t) => t.stop());
+          },
+          (err) => {
+            setStatus(statusId, `✗ Denied or error: ${err.name}`, false);
+            recordResult(`${label} denied/error: ` + err.name, false);
+          }
+        );
+      }
+
+      function requestCamera() {
+        requestMedia('camera', 'camera-status', '4c Camera', { video: true });
+      }
+
+      function requestMicrophone() {
+        requestMedia('microphone', 'mic-status', '4d Microphone', { audio: true });
+      }
+    </script>
+  </body>
+</html>

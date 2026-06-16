@@ -24,6 +24,12 @@ import { observationAccumulator } from '../observation/index.js';
 import { waitForNetworkQuiet, NAVIGATION_NETWORK_IDLE_TIMEOUT_MS } from './page-stabilization.js';
 import { getOrCreateTracker, removeTracker } from './page-network-tracker.js';
 import { getOrCreateRecorder, removeRecorder } from './page-network-recorder.js';
+import { getOrCreateDialogManager, removeDialogManager } from '../non-dom/dialog-manager.js';
+import { getOrCreateDownloadManager, removeDownloadManager } from '../non-dom/download-manager.js';
+import {
+  getOrCreatePermissionDetector,
+  removePermissionDetector,
+} from '../non-dom/permission-detector.js';
 import {
   extractErrorMessage,
   isValidHttpUrl,
@@ -82,9 +88,12 @@ export class SessionManager {
   private _lastWsEndpoint: string | undefined;
   /** Promise for in-flight launch/connect operation */
   private _connectionPromise: Promise<void> | null = null;
+  /** Absolute download directory (AWI_DOWNLOAD_DIR), or undefined for browser default. */
+  private readonly downloadDir?: string;
 
-  constructor() {
+  constructor(downloadDir?: string) {
     this.registry = new PageRegistry();
+    this.downloadDir = downloadDir;
   }
 
   /**
@@ -1249,7 +1258,8 @@ export class SessionManager {
 
   /**
    * Setup tracking infrastructure for a page.
-   * Injects observation accumulator and attaches network tracker.
+   * Injects observation accumulator, attaches network tracker, and wires
+   * the non-DOM interaction channel (dialog manager, file chooser interception).
    */
   private async setupPageTracking(page: Page): Promise<void> {
     await observationAccumulator.inject(page);
@@ -1260,9 +1270,50 @@ export class SessionManager {
     const recorder = getOrCreateRecorder(page);
     recorder.attach(page);
 
+    // Wire non-DOM channel: dialog management + file chooser interception.
+    // The handle must already be in the registry at this point.
+    const handle = this.registry.findByPage(page);
+    if (handle) {
+      const dialogManager = getOrCreateDialogManager(page);
+      // attach() is async but we do not await to keep setupPageTracking non-blocking.
+      // The interception is best-effort: it will be active for any subsequent action.
+      void dialogManager.attach(handle.cdp).catch((err) => {
+        this.logger.debug('DialogManager attach failed (non-fatal)', {
+          page_id: handle.page_id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+
+      // Wire permission detection: monkey-patches permission-triggering APIs so
+      // undecided requests surface as non-DOM "permission" surfaces the agent
+      // resolves via click. Best-effort, same as the dialog channel.
+      const permissionDetector = getOrCreatePermissionDetector(page);
+      void permissionDetector.attach(handle.cdp).catch((err) => {
+        this.logger.debug('PermissionDetector attach failed (non-fatal)', {
+          page_id: handle.page_id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+
+      // Route downloads to AWI_DOWNLOAD_DIR when configured. Opt-in: when the
+      // dir is unset we leave the browser's default download behavior intact.
+      if (this.downloadDir) {
+        const downloadManager = getOrCreateDownloadManager(page, this.downloadDir);
+        void downloadManager.attach(handle.cdp).catch((err) => {
+          this.logger.debug('DownloadManager attach failed (non-fatal)', {
+            page_id: handle.page_id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+      }
+    }
+
     page.on('close', () => {
       removeTracker(page);
       removeRecorder(page);
+      removeDialogManager(page);
+      removeDownloadManager(page);
+      removePermissionDetector(page);
     });
   }
 }

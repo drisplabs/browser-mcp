@@ -298,7 +298,7 @@ export class SessionController implements ToolContext {
    */
   private getOrCreateSessionManager(): SessionManager {
     if (!this._sessionManager) {
-      this._sessionManager = new SessionManager();
+      this._sessionManager = new SessionManager(this._browserConfig.downloadDir);
       this._unsubStateChange = this._sessionManager.onStateChange((event) => {
         if (event.currentState === 'failed') {
           this.clearSessionState();

@@ -196,3 +196,17 @@ beforeEach(() => {
 - No `page.waitForLoadState()` - use PageNetworkTracker instead
 - No `page.waitForTimeout()` - use `setTimeout()` wrapper
 - No `page.textContent()` - use `page.$eval(selector, el => el.textContent)`
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (`lespaceman/agent-web-interface`). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default label vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout — `CONTEXT.md` at the root, ADRs in `docs/adr/`. See `docs/agents/domain.md`.

@@ -32,6 +32,18 @@ Whether a harness is present on the machine, used to pre-select it for confirmat
 Any interaction that lives outside the page DOM and therefore cannot be reached by snapshot/element-action tools — native file picker, JavaScript dialogs, downloads, permission prompts, basic-auth dialogs, and other native browser chrome.
 _Avoid_: native UI, OS dialog (too narrow)
 
+**Non-DOM surface**:
+A currently visible interaction surface outside the page DOM that the agent can perceive and act on through normal snapshot control kinds plus surface metadata, such as a file picker, JavaScript dialog, permission prompt, basic-auth prompt, or download destination prompt.
+_Avoid_: native dialog, OS dialog, fake DOM element
+
+**Blocking non-DOM surface**:
+A non-DOM surface that prevents normal page interaction until the agent responds to it. Blocking surfaces become the active layer; non-blocking surfaces appear as additional context while the page layer remains active.
+_Avoid_: treating all non-DOM surfaces as modal
+
+**Synthetic element ID**:
+An element ID in the normal `eid` namespace that identifies an agent-actionable control on a non-DOM surface rather than a DOM-backed node. Synthetic IDs use a clear prefix so action tools can route them internally without introducing a second targeting concept.
+_Avoid_: separate surface ID, fake DOM ID
+
 **Browser host**:
 The host (machine or container) where the Chromium process actually runs. File uploads require files to exist on the browser host, not the MCP server host.
 _Avoid_: Chrome host, remote host
@@ -47,3 +59,9 @@ A configured directory within which an upload file path must be contained. Uploa
 
 **Pending non-DOM prompt**:
 A currently-blocking native prompt (open dialog, awaiting auth) surfaced in every action response so the agent knows why the page is blocked and which tool clears it.
+
+### Snapshot & interaction pipeline
+
+**Action transaction**:
+The full lifecycle of an agent-requested browser action, from preparing the page and attempting the interaction through stabilization, observation capture, semantic page snapshot capture, and the returned state response.
+_Avoid_: action wrapper, click flow, post-action plumbing
