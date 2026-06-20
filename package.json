@@ -77,6 +77,12 @@
     "typescript-eslint": "^8.53.0",
     "vitest": "^4.0.17"
   },
+  "overrides": {
+    "chrome-remote-interface": {
+      "ws": "^7.5.11"
+    },
+    "hono": "^4.12.26"
+  },
   "lint-staged": {
     "*.ts": [
       "eslint --fix",
