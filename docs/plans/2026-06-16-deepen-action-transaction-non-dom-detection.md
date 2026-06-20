@@ -11,11 +11,11 @@ PR #91 made dialogs, file pickers, and permission prompts perceivable as
 click handler as **three serial, differently-shaped probes**. Three concrete
 defects fall out of that one structural gap:
 
-1. **Per-click latency floor (#1).** Every DOM click that does *not* open a
+1. **Per-click latency floor (#1).** Every DOM click that does _not_ open a
    permission prompt still awaits `waitForPendingPermission` for the full
    `PERMISSION_CLICK_RACE_TIMEOUT_MS = 500ms`
    (`interaction-tools.ts:71`, `:332`, `:449`). The permission signal arrives
-   asynchronously over a CDP binding *after* the click resolves, and there is no
+   asynchronously over a CDP binding _after_ the click resolves, and there is no
    "nothing was requested" signal, so the code blind-polls. Result: a 500ms tax
    on the most common action in the system.
 
@@ -57,7 +57,7 @@ Two facts the current code under-uses:
 - **Stabilization is already a wait window.** Every click already awaits
   `stabilizeAfterAction` (`interaction-tools.ts:156`, `:475`) — network-idle +
   DOM render, typically longer than the sub-100ms permission binding round-trip.
-  A permission requested by the click's handler will have fired *during* that
+  A permission requested by the click's handler will have fired _during_ that
   window. It can be read as a flag afterward for **zero added latency**, instead
   of polled for beforehand.
 - **File-chooser interception already fires for indirect triggers.** With
@@ -129,6 +129,7 @@ review's "First slice: DOM click plus non-DOM detection."
   the correct primitive for a renderer-blocking surface.
 
 **Acceptance**
+
 - [ ] A click that opens no permission prompt adds **0ms** beyond stabilization
       (assert with fake timers: no pending `setTimeout` after the click resolves
       and stabilization completes).
@@ -148,6 +149,7 @@ review's "First slice: DOM click plus non-DOM detection."
   in Slice 1, now covering choosers too.
 
 **Acceptance**
+
 - [ ] A plain button click issues **no** `DOM.resolveNode` / `DOM.describeNode`
       (assert against the CDP mock call log).
 - [ ] Manual tests 1a–1e (direct, styled button, label, dropzone, multi) still
@@ -163,6 +165,7 @@ review's "First slice: DOM click plus non-DOM detection."
   `nd-*` control) and on page-close / hard-navigation cleanup.
 
 **Acceptance**
+
 - [ ] A DOM action attempted while a dialog is pending auto-dismisses the dialog
       (default policy) and returns a fresh state, rather than hanging.
 - [ ] `applyDefaultPolicy` has at least one production caller (no dead code).
@@ -171,11 +174,12 @@ review's "First slice: DOM click plus non-DOM detection."
 ### Slice 4 — Introduce `NonDomChannel`, retire the scattered accessors
 
 - Fold `DialogManager`, `PermissionDetector`, and the `getSurface/setSurface/
-  clearSurface` calls behind `NonDomChannel`. Detectors become private handlers
+clearSurface` calls behind `NonDomChannel`. Detectors become private handlers
   that settle the shared signal.
 - `interaction-tools` and `observation-tools` talk only to the channel.
 
 **Acceptance**
+
 - [ ] One `surfaceSignal()` race replaces the serial dialog/chooser/permission
       branches in `clickElementWithNonDomDetection`.
 - [ ] `getOrCreateDialogManager` / `getOrCreatePermissionDetector` are no longer
@@ -193,7 +197,7 @@ review's "First slice: DOM click plus non-DOM detection."
 ## Risk & validation
 
 - **Permission requested after stabilization completes** (timer-driven, not
-  click-driven) is intentionally *not* blocked on — it surfaces on the next
+  click-driven) is intentionally _not_ blocked on — it surfaces on the next
   action or `snapshot`. This is correct: such a request is not an outcome of the
   click being reported.
 - Validate end-to-end with `tests/manual/non-dom-channel.html` (all of upload,
