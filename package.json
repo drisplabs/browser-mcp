@@ -1,7 +1,7 @@
 {
   "name": "agent-web-interface",
   "version": "4.6.4",
-  "description": "MCP server for AI-powered browser automation with semantic page snapshots",
+  "description": "Token-efficient browser automation MCP for AI agents \u2014 semantic page snapshots and stable element IDs.",
   "type": "module",
   "main": "dist/src/index.js",
   "bin": {
@@ -27,11 +27,15 @@
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "browser-automation",
-    "cef",
-    "qt",
+    "ai-agents",
+    "puppeteer",
+    "llm",
+    "web-automation",
     "claude",
-    "ai-agents"
+    "semantic-dom",
+    "agent-tools"
   ],
   "author": "Nadeem",
   "license": "MIT",
@@ -42,7 +46,7 @@
   "bugs": {
     "url": "https://github.com/lespaceman/agent-web-interface/issues"
   },
-  "homepage": "https://github.com/lespaceman/agent-web-interface#readme",
+  "homepage": "https://agent-web-interface.com",
   "files": [
     "dist/**/*",
     "skills/**",
