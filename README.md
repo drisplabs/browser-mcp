@@ -2,6 +2,8 @@
 
 Agent Web Interface is an MCP server that gives AI agents a compact, semantic interface to the browser.
 
+**[Website](https://agent-web-interface.com)** · **[npm](https://www.npmjs.com/package/agent-web-interface)** · **[vs. Playwright MCP](https://agent-web-interface.com/vs-playwright-mcp)**
+
 Instead of exposing the full DOM or accessibility tree, it returns structured page snapshots: visible regions, readable content, interactive elements, stable element IDs, form context, screenshots, canvas inspection, and network activity. Agents can then navigate and act on pages using semantic IDs instead of brittle selectors or massive context dumps.
 
 It is built for coding agents, browser agents, QA agents, research agents, and automation workflows that need reliable web interaction without wasting tokens on low-signal browser internals.
