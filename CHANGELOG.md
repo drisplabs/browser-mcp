@@ -1,3 +1,14 @@
+## [4.6.5] - 2026-07-04
+
+- chore: add minimal Dockerfile for Glama introspection (#97)
+- fix(ci): prettier-format package.json (em dash escaped by generator) (#98)
+- chore(seo): point npm homepage at the site, sharpen keywords/description (#96)
+- fix(ci): prettier-format non-DOM detection plan doc (#95)
+- fix(#92): give the dialog safety net an owner and a caller (Slice 3)
+- refactor(#92): trust file-chooser interception, drop speculative resolve (Slice 2)
+- refactor(#92): fold permission detection into stabilization (Slice 1)
+- feat: non-DOM surface model + tool-surface consolidation (#86–#90, #92) (#91)
+
 ## [4.6.4] - 2026-06-15
 
 - fix(install): clean up interactive summary UX and repair three bugs (#84)
