@@ -131,7 +131,8 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     'go_back',
     {
       title: 'Go Back',
-      description: 'Go back one page in browser history.',
+      description:
+        'Go back one page in browser history. Returns a fresh page snapshot of the resulting page with its interactive elements.',
       inputSchema: GoBackInputSchema.shape,
     },
     wrap(goBack)
@@ -141,7 +142,8 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     'go_forward',
     {
       title: 'Go Forward',
-      description: 'Go forward one page in browser history.',
+      description:
+        'Go forward one page in browser history. Returns a fresh page snapshot of the resulting page with its interactive elements.',
       inputSchema: GoForwardInputSchema.shape,
     },
     wrap(goForward)
@@ -151,7 +153,8 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     'reload',
     {
       title: 'Reload',
-      description: 'Refresh the current page.',
+      description:
+        'Refresh the current page. Use after a change that only takes effect on reload, or to recover from a stale page. Returns a fresh page snapshot with its interactive elements.',
       inputSchema: ReloadInputSchema.shape,
     },
     wrap(reload)
@@ -177,7 +180,7 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     {
       title: 'Find',
       description:
-        'Search for interactive elements OR read page text content. Filter by `kind` (button, link, textbox, canvas), `label` (case-insensitive substring match), or `region` (header, main, footer).',
+        'Locate elements or read page text without acting on them. Two modes: filter by `kind`/`label`/`region` to find interactive elements (returns each match with a stable `eid` for use with click, type, select, etc.), or set `include_readable` to also get text content tagged with semantic `rd-*` ids. Best for pinpointing a target before an action or pulling specific content; use snapshot for the whole page. Returns matching elements/content as XML.',
       inputSchema: FindElementsInputSchema.shape,
     },
     wrap(findElements)
@@ -187,7 +190,8 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     'get_element',
     {
       title: 'Get Element',
-      description: 'Get complete details for one element: exact position, size, state, attributes.',
+      description:
+        'Get complete details for one element: exact position, size, state, and attributes. Requires an `eid` obtained from find or snapshot. Use when you need precise geometry or full attribute/state data for a single element. Returns the element details as XML.',
       inputSchema: GetNodeDetailsInputSchema.shape,
     },
     wrap(getNodeDetails)
@@ -197,7 +201,8 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     'screenshot',
     {
       title: 'Screenshot',
-      description: 'Capture a screenshot of the current page or a specific element.',
+      description:
+        'Capture a screenshot of the current page or a specific element. Use for visual verification or when layout/rendering matters; prefer snapshot or find for reading structure and text. Returns the image inline, or a file path when the image is large.',
       inputSchema: TakeScreenshotInputSchemaBase.shape,
     },
     wrap(takeScreenshot)
@@ -211,7 +216,8 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     'scroll_to',
     {
       title: 'Scroll To',
-      description: 'Scroll until a specific element is visible in the viewport.',
+      description:
+        'Scroll until a specific element (by `eid`) is visible in the viewport. Use before clicking or reading an element that find/snapshot reports as off-screen. Returns a fresh page snapshot reflecting the new scroll position.',
       inputSchema: ScrollElementIntoViewInputSchemaBase.shape,
     },
     wrap(scrollElementIntoView)
@@ -221,7 +227,8 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     'scroll',
     {
       title: 'Scroll',
-      description: 'Scroll the viewport up or down by pixels.',
+      description:
+        'Scroll the viewport up or down by a pixel amount. Use to reveal more of a long page or trigger lazy-loaded content; use scroll_to when you know the target element. Returns a fresh page snapshot reflecting the new scroll position.',
       inputSchema: ScrollPageInputSchema.shape,
     },
     wrap(scrollPage)
@@ -231,7 +238,8 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     'click',
     {
       title: 'Click Element',
-      description: 'Click an element or at viewport coordinates.',
+      description:
+        'Click an element (by `eid`) or at viewport coordinates. Prefer `eid` for reliability; use coordinates only for canvas or non-semantic targets. Returns a fresh page snapshot with the changes the click produced.',
       inputSchema: ClickInputSchemaBase.shape,
     },
     wrap(click)
@@ -241,7 +249,8 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     'type',
     {
       title: 'Type Text',
-      description: 'Type text into an input field or text area.',
+      description:
+        'Type text into an input field or text area (by `eid`). Set `clear` to replace existing content instead of appending. Returns a fresh page snapshot reflecting the updated field and any resulting changes (validation, autocomplete, etc.).',
       inputSchema: TypeInputSchemaBase.shape,
     },
     wrap(type)
@@ -251,7 +260,8 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     'press',
     {
       title: 'Press Key',
-      description: 'Press a keyboard key with optional modifiers.',
+      description:
+        'Press a single keyboard key with optional modifiers, dispatched to the focused element. Use for submitting with Enter, dismissing with Escape, or keyboard navigation (Tab, arrows); use type to enter text. Returns a fresh page snapshot with any resulting changes.',
       inputSchema: PressInputSchema.shape,
     },
     wrap(press)
@@ -282,7 +292,8 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     'drag',
     {
       title: 'Drag',
-      description: 'Drag from one point to another.',
+      description:
+        'Drag from a source point to a target point (optionally relative to an element via `eid`). Use for reordering lists, moving sliders/handles, or manipulating canvas objects. Returns a fresh page snapshot with any resulting changes.',
       inputSchema: DragInputSchemaBase.shape,
     },
     wrap(drag)
@@ -323,7 +334,7 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     {
       title: 'Get Form',
       description:
-        'Analyze all forms on the page: fields, required inputs, validation rules, and field dependencies.',
+        'Analyze all forms on the page: fields, required inputs, validation rules, and field dependencies. Call this first on any multi-field or multi-step form to plan the fill order, instead of scrolling and screenshotting. Returns each form as XML with per-field eids, state, constraints, and the suggested next field to fill.',
       inputSchema: GetFormUnderstandingInputSchema.shape,
     },
     wrap(getFormUnderstanding)
@@ -334,7 +345,7 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     {
       title: 'Get Field',
       description:
-        'Get detailed info about one form field: purpose, valid input formats, dependencies, and suggested values.',
+        'Get detailed info about one form field (by `eid`): purpose, valid input formats, dependencies, and suggested values. Use to resolve a field get_form flagged as ambiguous or invalid before typing into it. Returns the field context as XML including constraints, options, and dependencies.',
       inputSchema: GetFieldContextInputSchema.shape,
     },
     wrap(getFieldContext)
@@ -364,7 +375,7 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     {
       title: 'List Network Calls',
       description:
-        'List HTTP requests and responses made by the page. Filter by resource type, method, status code, or URL pattern. Supports pagination.',
+        'List HTTP requests and responses made by the page. Filter by resource type, method, status code, or URL pattern; supports pagination. Use after navigate or an action to inspect API traffic, confirm a request fired, or find failing calls (e.g. status_min=400). Returns request/response summaries as XML.',
       inputSchema: ListNetworkCallsInputSchema.shape,
     },
     wrap(listNetworkCalls)
@@ -375,7 +386,7 @@ export function registerAllTools(server: ToolRegistrar, resolveCtx: ContextResol
     {
       title: 'Search Network Calls',
       description:
-        'Search network calls by URL pattern (substring or regex). Returns matching requests with optional headers and body details.',
+        'Search network calls by URL pattern (substring or regex). Use when you know part of the endpoint URL and want just those calls, optionally with headers and request body; use list_network_calls to browse all traffic. Returns matching requests as XML with optional headers and body details.',
       inputSchema: SearchNetworkCallsInputSchema.shape,
     },
     wrap(searchNetworkCalls)

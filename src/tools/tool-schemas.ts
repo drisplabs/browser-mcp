@@ -117,9 +117,15 @@ export type ClosePageOutput = z.infer<typeof ClosePageOutputSchema>;
 
 export const NavigateInputSchema = z.object({
   /** URL to navigate to */
-  url: z.string().url(),
+  url: z
+    .string()
+    .url()
+    .describe('Absolute URL to navigate to, including the scheme (e.g. https://example.com).'),
   /** Page ID. If omitted, operates on the most recently used page */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
 });
 
 /** Returns XML state response string directly */
@@ -134,7 +140,10 @@ export type NavigateOutput = z.infer<typeof NavigateOutputSchema>;
 
 export const GoBackInputSchema = z.object({
   /** Page ID. If omitted, operates on the most recently used page */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
 });
 
 /** Returns XML state response string directly */
@@ -149,7 +158,10 @@ export type GoBackOutput = z.infer<typeof GoBackOutputSchema>;
 
 export const GoForwardInputSchema = z.object({
   /** Page ID. If omitted, operates on the most recently used page */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
 });
 
 /** Returns XML state response string directly */
@@ -164,7 +176,10 @@ export type GoForwardOutput = z.infer<typeof GoForwardOutputSchema>;
 
 export const ReloadInputSchema = z.object({
   /** Page ID. If omitted, operates on the most recently used page */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
 });
 
 /** Returns XML state response string directly */
@@ -179,7 +194,10 @@ export type ReloadOutput = z.infer<typeof ReloadOutputSchema>;
 
 export const CaptureSnapshotInputSchema = z.object({
   /** Page ID. If omitted, operates on the most recently used page */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
 });
 
 /** Returns XML state response string directly */
@@ -250,9 +268,14 @@ export type FindElementsOutput = z.infer<typeof FindElementsOutputSchema>;
 
 export const GetNodeDetailsInputSchema = z.object({
   /** Stable element ID (eid) to get details for */
-  eid: z.string(),
+  eid: z
+    .string()
+    .describe('Element ID to inspect, obtained from find results or the page snapshot.'),
   /** Page ID. If omitted, operates on the most recently used page */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
 });
 
 /** Returns XML result string */
@@ -271,7 +294,10 @@ const ScrollElementIntoViewInputSchemaBase = z.object({
     .string()
     .describe('Element ID of the off-screen element from find results or the page snapshot.'),
   /** Page ID. If omitted, operates on the most recently used page */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
 });
 export const ScrollElementIntoViewInputSchema = ScrollElementIntoViewInputSchemaBase;
 export { ScrollElementIntoViewInputSchemaBase };
@@ -288,11 +314,14 @@ export type ScrollElementIntoViewOutput = z.infer<typeof ScrollElementIntoViewOu
 
 export const ScrollPageInputSchema = z.object({
   /** Scroll direction */
-  direction: z.enum(['up', 'down']),
+  direction: z.enum(['up', 'down']).describe("Direction to scroll the viewport: 'up' or 'down'."),
   /** Scroll amount in pixels (default: 500) */
-  amount: z.number().default(500),
+  amount: z.number().default(500).describe('Distance to scroll in pixels (default: 500).'),
   /** Page ID. If omitted, operates on the most recently used page */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
 });
 
 /** Returns XML state response string directly */
@@ -381,7 +410,10 @@ const TypeInputSchemaBase = z.object({
       'If true, clear the field before typing (replaces content). If false (default), append to existing text.'
     ),
   /** Page ID. If omitted, operates on the most recently used page */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
 });
 export const TypeInputSchema = TypeInputSchemaBase;
 export { TypeInputSchemaBase };
@@ -395,11 +427,21 @@ export type TypeOutput = z.infer<typeof TypeOutputSchema>;
 // press - Press a keyboard key (no agent_version)
 export const PressInputSchema = z.object({
   /** Key to press */
-  key: z.enum(SupportedKeys),
+  key: z
+    .enum(SupportedKeys)
+    .describe(
+      'Key to press on the focused element, e.g. Enter to submit, Escape to dismiss, Tab to move focus, or the arrow keys to navigate.'
+    ),
   /** Modifier keys to hold (Control, Shift, Alt, Meta) */
-  modifiers: z.array(z.enum(['Control', 'Shift', 'Alt', 'Meta'])).optional(),
+  modifiers: z
+    .array(z.enum(['Control', 'Shift', 'Alt', 'Meta']))
+    .optional()
+    .describe('Modifier keys to hold while the key is pressed (e.g. Control, Shift).'),
   /** Page ID. If omitted, operates on the most recently used page */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
 });
 
 /** Returns XML state response string directly */
@@ -419,7 +461,10 @@ const SelectInputSchemaBase = z.object({
       'The option to select - can be either the value attribute or the visible text of the option.'
     ),
   /** Page ID. If omitted, operates on the most recently used page */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
 });
 export const SelectInputSchema = SelectInputSchemaBase;
 export { SelectInputSchemaBase };
@@ -435,7 +480,10 @@ const HoverInputSchemaBase = z.object({
   /** Stable element ID from find or snapshot */
   eid: z.string().describe('Element ID from find results or the page snapshot.'),
   /** Page ID. If omitted, operates on the most recently used page */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
 });
 export const HoverInputSchema = HoverInputSchemaBase;
 export { HoverInputSchemaBase };
