@@ -1,3 +1,8 @@
+## [4.6.6] - 2026-07-04
+
+- docs(tools): enrich tool + param descriptions for LLM discoverability (#99)
+- docs: add website link near top of README (#100)
+
 ## [4.6.5] - 2026-07-04
 
 - chore: add minimal Dockerfile for Glama introspection (#97)
