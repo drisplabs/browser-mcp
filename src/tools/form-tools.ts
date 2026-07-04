@@ -64,11 +64,24 @@ function resolveFormEids(
  */
 export const GetFormUnderstandingInputSchema = z.object({
   /** Page identifier (optional, defaults to MRU page) */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
   /** Form ID to get specific form (optional) */
-  form_id: z.string().optional(),
+  form_id: z
+    .string()
+    .optional()
+    .describe(
+      'Restrict the result to a single form by its id (from a prior get_form call). If omitted, all forms on the page are returned.'
+    ),
   /** Include field values in response (default: false for security) */
-  include_values: z.boolean().default(false),
+  include_values: z
+    .boolean()
+    .default(false)
+    .describe(
+      "When true, include each field's current value in the response. Defaults to false; sensitive values (passwords, tokens) remain masked even when enabled."
+    ),
 });
 
 export type GetFormUnderstandingInput = z.infer<typeof GetFormUnderstandingInputSchema>;
@@ -78,9 +91,14 @@ export type GetFormUnderstandingInput = z.infer<typeof GetFormUnderstandingInput
  */
 export const GetFieldContextInputSchema = z.object({
   /** Page identifier (optional, defaults to MRU page) */
-  page_id: z.string().optional(),
+  page_id: z
+    .string()
+    .optional()
+    .describe('Page ID. If omitted, operates on the most recently used page.'),
   /** Element ID of the field */
-  eid: z.string(),
+  eid: z
+    .string()
+    .describe('Element ID of the form field to inspect, from get_form or the page snapshot.'),
 });
 
 export type GetFieldContextInput = z.infer<typeof GetFieldContextInputSchema>;
