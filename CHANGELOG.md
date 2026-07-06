@@ -1,3 +1,7 @@
+## [4.6.7] - 2026-07-06
+
+- chore: add glama.json to claim MCP server ownership on Glama (#101)
+
 ## [4.6.6] - 2026-07-04
 
 - docs(tools): enrich tool + param descriptions for LLM discoverability (#99)
