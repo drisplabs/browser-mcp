@@ -12,10 +12,10 @@ async function cleanup(dir: string): Promise<void> {
   await rm(dir, { recursive: true, force: true });
 }
 
-const FAKE_SKILL_BODY = '# Agent Web Interface Guide\n\nFake skill body content.\n';
+const FAKE_SKILL_BODY = '# Drisp Browser Guide\n\nFake skill body content.\n';
 
 const FAKE_SKILL_META = {
-  name: 'agent-web-interface',
+  name: 'drisp-browser',
   description: 'Drive a real browser against a live or staging website.',
 };
 
@@ -23,7 +23,7 @@ function makeSkillResolver(): SkillResolver {
   return () =>
     Promise.resolve({
       meta: FAKE_SKILL_META,
-      rawContent: `---\nname: agent-web-interface\ndescription: Drive a real browser against a live or staging website.\n---\n${FAKE_SKILL_BODY}`,
+      rawContent: `---\nname: drisp-browser\ndescription: Drive a real browser against a live or staging website.\n---\n${FAKE_SKILL_BODY}`,
       body: FAKE_SKILL_BODY,
     });
 }
@@ -41,9 +41,9 @@ describe('CursorAdapter.apply() — project scope', () => {
       const mcpJson = JSON.parse(await readFile(join(dir, '.cursor', 'mcp.json'), 'utf-8')) as {
         mcpServers: Record<string, { command: string; args: string[] }>;
       };
-      expect(mcpJson.mcpServers['agent-web-interface']).toEqual({
+      expect(mcpJson.mcpServers['drisp-browser']).toEqual({
         command: 'npx',
-        args: ['-y', 'agent-web-interface@latest'],
+        args: ['-y', '@drisp/browser-mcp@latest'],
       });
     } finally {
       await cleanup(dir);
@@ -72,7 +72,7 @@ describe('CursorAdapter.apply() — project scope', () => {
         mcpServers: Record<string, unknown>;
       };
       expect(mcpJson.mcpServers['other-server']).toEqual({ command: 'node', args: ['other.js'] });
-      expect(mcpJson.mcpServers['agent-web-interface']).toBeDefined();
+      expect(mcpJson.mcpServers['drisp-browser']).toBeDefined();
     } finally {
       await cleanup(dir);
     }
@@ -109,14 +109,14 @@ describe('CursorAdapter.apply() — project scope', () => {
 });
 
 describe('CursorAdapter.apply() — skill placement', () => {
-  it('writes .cursor/rules/agent-web-interface.mdc with correct frontmatter + body', async () => {
+  it('writes .cursor/rules/drisp-browser.mdc with correct frontmatter + body', async () => {
     const dir = await makeTmpDir();
     try {
       const adapter = new CursorAdapter({ skillResolver: makeSkillResolver() });
       await adapter.apply({ scope: 'project', cwd: dir });
 
       const mdcContent = await readFile(
-        join(dir, '.cursor', 'rules', 'agent-web-interface.mdc'),
+        join(dir, '.cursor', 'rules', 'drisp-browser.mdc'),
         'utf-8'
       );
       expect(mdcContent).toContain('---');
@@ -136,7 +136,7 @@ describe('CursorAdapter.apply() — skill placement', () => {
       await adapter.apply({ scope: 'project', cwd: dir });
 
       const mdcContent = await readFile(
-        join(dir, '.cursor', 'rules', 'agent-web-interface.mdc'),
+        join(dir, '.cursor', 'rules', 'drisp-browser.mdc'),
         'utf-8'
       );
       // The only frontmatter block should be the wrapper, not the skill's own frontmatter
@@ -174,7 +174,7 @@ describe('CursorAdapter.apply() — user scope', () => {
       const mcpJson = JSON.parse(await readFile(join(dir, '.cursor', 'mcp.json'), 'utf-8')) as {
         mcpServers: Record<string, unknown>;
       };
-      expect(mcpJson.mcpServers['agent-web-interface']).toBeDefined();
+      expect(mcpJson.mcpServers['drisp-browser']).toBeDefined();
     } finally {
       await cleanup(dir);
     }
@@ -193,7 +193,7 @@ describe('CursorAdapter.status()', () => {
     }
   });
 
-  it('returns configured=true when agent-web-interface is in .cursor/mcp.json', async () => {
+  it('returns configured=true when drisp-browser is in .cursor/mcp.json', async () => {
     const dir = await makeTmpDir();
     try {
       const adapter = new CursorAdapter({ skillResolver: makeSkillResolver() });

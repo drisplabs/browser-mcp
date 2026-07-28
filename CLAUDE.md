@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Agent Web Interface is an MCP (Model Context Protocol) server for AI-powered browser automation via Puppeteer and CDP (Chrome DevTools Protocol). It provides **semantic page snapshots** - compact, structured representations designed for LLM consumption with stable element IDs that survive DOM mutations.
+Drisp Browser is an MCP (Model Context Protocol) server for AI-powered browser automation via Puppeteer and CDP (Chrome DevTools Protocol). It provides **semantic page snapshots** - compact, structured representations designed for LLM consumption with stable element IDs that survive DOM mutations.
 
 **25 Tools** across 9 categories:
 
@@ -201,7 +201,7 @@ beforeEach(() => {
 
 ### Issue tracker
 
-Issues live in GitHub Issues (`lespaceman/agent-web-interface`). See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues (`drisplabs/browser-mcp`). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

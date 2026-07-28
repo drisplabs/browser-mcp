@@ -18,11 +18,11 @@ export interface CursorAdapterDeps {
   skillResolver?: SkillResolver;
 }
 
-const SERVER_NAME = 'agent-web-interface';
+const SERVER_NAME = 'drisp-browser';
 
 const SERVER_COMMAND: ServerCommand = {
   command: 'npx',
-  args: ['-y', 'agent-web-interface@latest'],
+  args: ['-y', '@drisp/browser-mcp@latest'],
 };
 
 function mcpJsonPath(scope: 'project' | 'user' | 'global', cwd: string, homeDir: string): string {

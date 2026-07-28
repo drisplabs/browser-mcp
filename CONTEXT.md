@@ -1,4 +1,4 @@
-# Agent Web Interface
+# Drisp Browser
 
 An MCP server for AI-driven browser automation. It produces semantic page snapshots and exposes tools for an AI agent to observe and act on web pages.
 
@@ -11,10 +11,10 @@ An AI client that consumes the MCP server and/or the skill. v1 targets four: Cla
 _Avoid_: client, IDE, editor (too narrow)
 
 **Install**:
-The single setup command (`agent-web-interface install`) that, for each chosen harness, performs MCP registration and places the skill.
+The single setup command (`drisp-browser-mcp install`) that, for each chosen harness, performs MCP registration and places the skill.
 
 **MCP registration**:
-Adding the agent-web-interface server to a harness's configuration so its `mcp__agent-web-interface__*` tools become available.
+Adding the drisp-browser server to a harness's configuration so its `mcp__drisp-browser__*` tools become available.
 
 **Skill**:
 A single portable guidance document (canonical `SKILL.md` body, **no tool-gating**) that teaches an agent to drive the tools well. Delivered to every harness, wrapped for that harness's native format and location.

@@ -150,14 +150,14 @@ function formatUserFacingErrorMessage(error: unknown): string {
   ) {
     return (
       'Could not connect to your existing Chrome session. Open Chrome first and enable remote debugging. ' +
-      'Or set AWI_BROWSER_MODE=persistent to launch a dedicated browser.'
+      'Or set DRISP_BROWSER_MODE=persistent to launch a dedicated browser.'
     );
   }
 
   if (error.code === 'BROWSER_DISCONNECTED' && error.context?.connectionMode === 'external') {
     return (
       'The connected Chrome session was closed. Open Chrome again, ' +
-      'or set AWI_BROWSER_MODE=persistent to launch a dedicated browser.'
+      'or set DRISP_BROWSER_MODE=persistent to launch a dedicated browser.'
     );
   }
 

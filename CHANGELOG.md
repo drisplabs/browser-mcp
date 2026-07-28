@@ -1,3 +1,14 @@
+## Unreleased
+
+- **rename**: the package is renamed `agent-web-interface` → `@drisp/browser-mcp`,
+  joining the Drisp family (see `docs/adr/0004`). The MCP server id is now
+  `drisp-browser`, the CLI/bin is `drisp-browser-mcp`, and the companion skill is
+  `drisp-browser`. Back-compat: the legacy `AWI_*` env vars are still honored (with a
+  one-time deprecation warning) and map to the new `DRISP_BROWSER_*` prefix — e.g.
+  `AWI_BROWSER_MODE` → `DRISP_BROWSER_MODE`, `AWI_HEADLESS` → `DRISP_BROWSER_HEADLESS`.
+  Existing installs of `agent-web-interface` keep working; migrate to
+  `npx @drisp/browser-mcp@latest` at your convenience.
+
 ## [4.6.7] - 2026-07-06
 
 - chore: add glama.json to claim MCP server ownership on Glama (#101)

@@ -1,12 +1,12 @@
 ---
-name: agent-web-interface
+name: drisp-browser
 description: >
-  Drive a real browser against a live or staging website with the agent-web-interface MCP tools (navigate, snapshot, click, type, find, get_form, screenshot, etc.). Load it whenever the task is to actually open a URL and observe or act on the running page: read live page state, click, type, fill or submit forms, walk flows like login/signup/search/add-to-cart/checkout, reproduce a bug at a given URL, screenshot the live page, or extract reliable selectors from a running page for automation. Trigger even for a single action ("open this page", "click that button on the site"), even when no URL is named but the target is clearly a live page, and on subagent dispatch with browser MCP access — when in doubt, load it. Do NOT load it for writing or styling UI code, fixing or reviewing form/auth/checkout code, authoring test files, or explaining how web tech works — those mention forms, buttons, or pages but need no live browser.
+  Drive a real browser against a live or staging website with the Drisp Browser (@drisp/browser-mcp) MCP tools (navigate, snapshot, click, type, find, get_form, screenshot, etc.). Load it whenever the task is to actually open a URL and observe or act on the running page: read live page state, click, type, fill or submit forms, walk flows like login/signup/search/add-to-cart/checkout, reproduce a bug at a given URL, screenshot the live page, or extract reliable selectors from a running page for automation. Trigger even for a single action ("open this page", "click that button on the site"), even when no URL is named but the target is clearly a live page, and on subagent dispatch with browser MCP access — when in doubt, load it. Do NOT load it for writing or styling UI code, fixing or reviewing form/auth/checkout code, authoring test files, or explaining how web tech works — those mention forms, buttons, or pages but need no live browser.
 user-invocable: true
 argument-hint: "<url> <goal> — e.g. https://example.com 'Add item to cart'"
 ---
 
-# Agent Web Interface Guide
+# Drisp Browser Guide
 
 Use this skill to open live web pages, carry out actions, move through multi-step flows, validate page state, and capture selectors for automation.
 
@@ -20,26 +20,26 @@ Common uses:
 
 ## Setup
 
-This skill drives the **agent-web-interface** MCP server — installing the skill does **not** install that server. If the `mcp__agent-web-interface__*` tools aren't available, add the server first:
+This skill drives the **Drisp Browser** (`@drisp/browser-mcp`) MCP server — installing the skill does **not** install that server. If the `mcp__drisp-browser__*` tools aren't available, add the server first:
 
 ```bash
-claude mcp add agent-web-interface -- npx agent-web-interface@latest
+claude mcp add drisp-browser -- npx @drisp/browser-mcp@latest
 ```
 
-For Claude Desktop / Cursor / VS Code, register it under the key `agent-web-interface`:
+For Claude Desktop / Cursor / VS Code, register it under the key `drisp-browser`:
 
 ```json
 {
   "mcpServers": {
-    "agent-web-interface": {
+    "drisp-browser": {
       "command": "npx",
-      "args": ["agent-web-interface@latest"]
+      "args": ["@drisp/browser-mcp@latest"]
     }
   }
 }
 ```
 
-See the [agent-web-interface README](https://github.com/lespaceman/agent-web-interface) for browser modes (`user`, `persistent`, `isolated`) and options.
+See the [Drisp Browser README](https://github.com/drisplabs/browser-mcp) for browser modes (`user`, `persistent`, `isolated`) and options.
 
 **Why this skill must load before browser MCP calls:** without it, browser work reliably produces brittle CSS selectors, narrative prose instead of structured observations, missed state transitions, and shallow page coverage. The selector-capture and state-observation patterns below are what the downstream exploration report, spec generation, and test-writing skills depend on.
 
@@ -414,11 +414,11 @@ When a JavaScript dialog is blocking the page, calling `snapshot` returns the pr
 ## Example Usage
 
 ```
-/agent-web-interface https://airbnb.com Walk through the search and booking flow for stays in Tokyo
+/drisp-browser https://airbnb.com Walk through the search and booking flow for stays in Tokyo
 
-/agent-web-interface https://apple.com/store Configure an iPhone and add it to the bag, then summarize the steps
+/drisp-browser https://apple.com/store Configure an iPhone and add it to the bag, then summarize the steps
 
-/agent-web-interface https://developer.mozilla.org Find the Fetch API docs and note how the search flow behaves
+/drisp-browser https://developer.mozilla.org Find the Fetch API docs and note how the search flow behaves
 
-/agent-web-interface https://example.com/login Extract the login form selectors and field purposes
+/drisp-browser https://example.com/login Extract the login form selectors and field purposes
 ```

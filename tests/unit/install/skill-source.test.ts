@@ -13,25 +13,25 @@ async function cleanup(dir: string): Promise<void> {
 }
 
 const FAKE_SKILL = `---
-name: agent-web-interface
+name: drisp-browser
 description: >
-  Test description for the agent-web-interface skill.
+  Test description for the drisp-browser skill.
 user-invocable: true
 ---
 
-# Agent Web Interface Guide
+# Drisp Browser Guide
 
 Body content here.
 `;
 
 async function makePackageLayout(root: string, subdir?: string): Promise<string> {
   const pkgRoot = subdir ? join(root, subdir) : root;
-  await mkdir(join(pkgRoot, 'skills', 'agent-web-interface'), { recursive: true });
+  await mkdir(join(pkgRoot, 'skills', 'drisp-browser'), { recursive: true });
   await writeFile(
     join(pkgRoot, 'package.json'),
-    JSON.stringify({ name: 'agent-web-interface', version: '0.0.0' })
+    JSON.stringify({ name: '@drisp/browser-mcp', version: '0.0.0' })
   );
-  await writeFile(join(pkgRoot, 'skills', 'agent-web-interface', 'SKILL.md'), FAKE_SKILL);
+  await writeFile(join(pkgRoot, 'skills', 'drisp-browser', 'SKILL.md'), FAKE_SKILL);
   return pkgRoot;
 }
 
@@ -42,7 +42,7 @@ describe('resolveSkill', () => {
       const pkgRoot = await makePackageLayout(dir);
       const skill = await resolveSkill(pkgRoot);
 
-      expect(skill.meta.name).toBe('agent-web-interface');
+      expect(skill.meta.name).toBe('drisp-browser');
       expect(skill.meta.description).toContain('Test description');
       expect(skill.rawContent).toContain('Body content here');
     } finally {
@@ -59,7 +59,7 @@ describe('resolveSkill', () => {
 
       const skill = await resolveSkill(subDir);
 
-      expect(skill.meta.name).toBe('agent-web-interface');
+      expect(skill.meta.name).toBe('drisp-browser');
     } finally {
       await cleanup(dir);
     }
@@ -84,7 +84,7 @@ describe('resolveSkill', () => {
       await makePackageLayout(dir);
       const skill = await resolveSkill(dir);
 
-      expect(skill.rawContent).toContain('name: agent-web-interface');
+      expect(skill.rawContent).toContain('name: drisp-browser');
       expect(skill.rawContent).toContain('description:');
     } finally {
       await cleanup(dir);

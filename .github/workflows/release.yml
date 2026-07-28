@@ -177,7 +177,7 @@ jobs:
         run: |
           echo "🎉 Release ${{ needs.validate.outputs.tag }} published successfully!"
           echo ""
-          echo "📦 NPM Package: https://www.npmjs.com/package/agent-web-interface/v/${{ needs.validate.outputs.version }}"
+          echo "📦 NPM Package: https://www.npmjs.com/package/@drisp/browser-mcp/v/${{ needs.validate.outputs.version }}"
           echo "🔖 GitHub Release: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ needs.validate.outputs.tag }}"
           echo ""
-          echo "Install with: npm install agent-web-interface@${{ needs.validate.outputs.version }}"
+          echo "Install with: npm install @drisp/browser-mcp@${{ needs.validate.outputs.version }}"

@@ -23,7 +23,7 @@ function initializeServer(): { server: BrowserAutomationServer; router: SessionR
 
   // Create MCP server shell
   const server = new BrowserAutomationServer({
-    name: 'agent-web-interface',
+    name: 'drisp-browser',
     version: VERSION,
   });
 

@@ -20,7 +20,7 @@ import { isInteractiveKind } from './actionables-filter.js';
  *
  * NOTE: Previously this included a hash of the first 10 interactive node IDs,
  * which caused false navigation detection when typing triggered autocomplete
- * or other dynamic UI updates. See: https://github.com/lespaceman/agent-web-interface/issues/XXX
+ * or other dynamic UI updates. See: https://github.com/drisplabs/browser-mcp/issues/XXX
  */
 export function computeDocId(snapshot: BaseSnapshot): string {
   const url = new URL(snapshot.url);

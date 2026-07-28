@@ -21,7 +21,7 @@ export async function dispatch(argv: string[], deps?: DispatchDeps): Promise<Dis
 
   if (verb === '--help') {
     process.stderr.write(
-      'Usage: agent-web-interface [command]\n\n' +
+      'Usage: drisp-browser-mcp [command]\n\n' +
         'Commands:\n' +
         '  install [flags]               Register MCP server and place skill\n' +
         '  doctor                        Show per-harness installation status\n' +

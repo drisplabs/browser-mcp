@@ -94,14 +94,14 @@ describe('buildServerCommand()', () => {
   it('uses @latest when no pin', () => {
     const flags = parseInstallFlags([]);
     const cmd = buildServerCommand(flags);
-    expect(cmd.args).toContain('agent-web-interface@latest');
+    expect(cmd.args).toContain('@drisp/browser-mcp@latest');
   });
 
   it('uses pinned version when --pin is set', () => {
     const flags = parseInstallFlags(['--pin', '1.2.3']);
     const cmd = buildServerCommand(flags);
-    expect(cmd.args).toContain('agent-web-interface@1.2.3');
-    expect(cmd.args).not.toContain('agent-web-interface@latest');
+    expect(cmd.args).toContain('@drisp/browser-mcp@1.2.3');
+    expect(cmd.args).not.toContain('@drisp/browser-mcp@latest');
   });
 
   it('adds --mode arg when browser-mode is not auto', () => {

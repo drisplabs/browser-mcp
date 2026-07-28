@@ -15,7 +15,7 @@ export async function promptInstall(
   // Dynamic import — @clack/prompts must never be statically imported on the server path
   const { intro, multiselect, select, confirm, outro, isCancel } = await import('@clack/prompts');
 
-  intro('agent-web-interface install');
+  intro('drisp-browser-mcp install');
 
   const harnessResult = await multiselect<string>({
     message: 'Which AI tools do you want to register the MCP server in?',

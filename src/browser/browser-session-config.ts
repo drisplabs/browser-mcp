@@ -4,20 +4,21 @@
  * Defines browser modes and loads configuration from environment variables.
  * Browser config is infrastructure — set once at startup, never per-tool-call.
  *
- * Env vars:
- *   AWI_BROWSER_MODE  - user | persistent | isolated (default: unset = auto fallback)
- *   AWI_CDP_URL       - Explicit CDP endpoint (overrides mode entirely)
- *   AWI_HEADLESS      - true | false (default: false, only for persistent/isolated)
- *   AWI_STEALTH       - true | false (default: true) fingerprint-only anti-detection
- *                       for launched browsers; no-op when connecting to user Chrome
- *   AWI_DOWNLOAD_DIR  - Absolute path for browser downloads (default: unset = browser
- *                       default behavior). When set, must be absolute; created if missing.
+ * Env vars (legacy AWI_* names are still honored as deprecated fallbacks):
+ *   DRISP_BROWSER_MODE        - user | persistent | isolated (default: unset = auto fallback)
+ *   DRISP_BROWSER_CDP_URL     - Explicit CDP endpoint (overrides mode entirely)
+ *   DRISP_BROWSER_HEADLESS    - true | false (default: false, only for persistent/isolated)
+ *   DRISP_BROWSER_STEALTH     - true | false (default: true) fingerprint-only anti-detection
+ *                               for launched browsers; no-op when connecting to user Chrome
+ *   DRISP_BROWSER_DOWNLOAD_DIR - Absolute path for browser downloads (default: unset = browser
+ *                               default behavior). When set, must be absolute; created if missing.
  *
  * @module browser/browser-session-config
  */
 
 import { isAbsolute } from 'node:path';
 import { mkdirSync } from 'node:fs';
+import { readEnv } from '../shared/env-compat.js';
 
 /**
  * Browser session modes.
@@ -65,23 +66,23 @@ export interface BrowserSessionConfig {
  * for the lifetime of the session.
  */
 export function loadBrowserConfig(): BrowserSessionConfig {
-  const rawMode = process.env.AWI_BROWSER_MODE?.trim().toLowerCase();
+  const rawMode = readEnv('DRISP_BROWSER_MODE', 'AWI_BROWSER_MODE')?.trim().toLowerCase();
   const browserMode: BrowserMode | undefined = BROWSER_MODES.includes(rawMode as BrowserMode)
     ? (rawMode as BrowserMode)
     : undefined;
 
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- empty string must be falsy
-  const cdpUrl = process.env.AWI_CDP_URL?.trim() || undefined;
+  const cdpUrl = readEnv('DRISP_BROWSER_CDP_URL', 'AWI_CDP_URL')?.trim() || undefined;
 
   // Stealth defaults ON; disabled only by an explicit falsy value.
-  const stealthRaw = process.env.AWI_STEALTH?.trim().toLowerCase();
+  const stealthRaw = readEnv('DRISP_BROWSER_STEALTH', 'AWI_STEALTH')?.trim().toLowerCase();
   const stealth = !(stealthRaw !== undefined && ['false', '0', 'no', 'off'].includes(stealthRaw));
 
   const downloadDir = resolveDownloadDir();
 
   return {
     browserMode,
-    headless: process.env.AWI_HEADLESS?.trim().toLowerCase() === 'true',
+    headless: readEnv('DRISP_BROWSER_HEADLESS', 'AWI_HEADLESS')?.trim().toLowerCase() === 'true',
     cdpUrl,
     stealth,
     downloadDir,
@@ -89,7 +90,7 @@ export function loadBrowserConfig(): BrowserSessionConfig {
 }
 
 /**
- * Resolve and validate AWI_DOWNLOAD_DIR.
+ * Resolve and validate DRISP_BROWSER_DOWNLOAD_DIR.
  *
  * Opt-in: returns undefined when unset/empty (browser default behavior).
  * When set, the path must be absolute and is created (recursively) if missing.
@@ -97,12 +98,12 @@ export function loadBrowserConfig(): BrowserSessionConfig {
  * startup rather than silently dropping downloads later.
  */
 function resolveDownloadDir(): string | undefined {
-  const raw = process.env.AWI_DOWNLOAD_DIR?.trim();
+  const raw = readEnv('DRISP_BROWSER_DOWNLOAD_DIR', 'AWI_DOWNLOAD_DIR')?.trim();
   if (!raw) return undefined;
 
   if (!isAbsolute(raw)) {
     throw new Error(
-      `AWI_DOWNLOAD_DIR must be an absolute path, but got: "${raw}". ` +
+      `DRISP_BROWSER_DOWNLOAD_DIR must be an absolute path, but got: "${raw}". ` +
         `Provide an absolute directory path (e.g. /tmp/agent-downloads).`
     );
   }
@@ -112,7 +113,7 @@ function resolveDownloadDir(): string | undefined {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `AWI_DOWNLOAD_DIR could not be created at "${raw}": ${message}. ` +
+      `DRISP_BROWSER_DOWNLOAD_DIR could not be created at "${raw}": ${message}. ` +
         `Ensure the path is writable.`
     );
   }
