@@ -176,7 +176,7 @@ export class HttpGateway {
 
     const mcpServer = new McpServer(
       {
-        name: 'agent-web-interface',
+        name: 'drisp-browser',
         version: this.version,
       },
       {

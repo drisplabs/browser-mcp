@@ -296,9 +296,9 @@ describe('SessionController', () => {
       expect(mockSessionManagerInstance.connect).not.toHaveBeenCalled();
     });
 
-    it('connects when AWI_CDP_URL env var is set', async () => {
+    it('connects when DRISP_BROWSER_CDP_URL env var is set', async () => {
       mockSessionManagerInstance.connect.mockResolvedValueOnce(undefined);
-      process.env.AWI_CDP_URL = 'http://localhost:9222';
+      process.env.DRISP_BROWSER_CDP_URL = 'http://localhost:9222';
       try {
         const controller2 = new SessionController({
           sessionId: 'connect-session',
@@ -311,7 +311,7 @@ describe('SessionController', () => {
         );
         expect(mockSessionManagerInstance.launch).not.toHaveBeenCalled();
       } finally {
-        delete process.env.AWI_CDP_URL;
+        delete process.env.DRISP_BROWSER_CDP_URL;
       }
     });
 

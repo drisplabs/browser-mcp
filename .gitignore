@@ -43,8 +43,8 @@ Thumbs.db
 # Worktrees
 .worktrees/
 
-# Local symlink (root-level only; must not match skills/agent-web-interface/)
-/agent-web-interface
+# Local symlink (root-level only; must not match skills/drisp-browser/)
+/drisp-browser
 
 # Agent skill install dir (regenerable via `npx skills experimental_install`; source is skills/)
 .agents/

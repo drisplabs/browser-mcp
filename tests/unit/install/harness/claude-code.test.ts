@@ -36,11 +36,11 @@ describe('ClaudeCodeAdapter.apply()', () => {
       'add',
       '-s',
       'project',
-      'agent-web-interface',
+      'drisp-browser',
       '--',
       'npx',
       '-y',
-      'agent-web-interface@latest',
+      '@drisp/browser-mcp@latest',
     ]);
     expect(result.changed).toBe(true);
     stderrSpy.mockRestore();
@@ -58,9 +58,9 @@ describe('ClaudeCodeAdapter.apply()', () => {
       const mcpJson = JSON.parse(await readFile(join(dir, '.mcp.json'), 'utf-8')) as {
         mcpServers: Record<string, { command: string; args: string[] }>;
       };
-      expect(mcpJson.mcpServers['agent-web-interface']).toEqual({
+      expect(mcpJson.mcpServers['drisp-browser']).toEqual({
         command: 'npx',
-        args: ['-y', 'agent-web-interface@latest'],
+        args: ['-y', '@drisp/browser-mcp@latest'],
       });
     } finally {
       await cleanup(dir);
@@ -102,9 +102,9 @@ describe('ClaudeCodeAdapter.apply()', () => {
       const mcpJson = JSON.parse(await readFile(join(dir, '.mcp.json'), 'utf-8')) as {
         mcpServers: Record<string, { command: string; args: string[] }>;
       };
-      expect(mcpJson.mcpServers['agent-web-interface']).toEqual({
+      expect(mcpJson.mcpServers['drisp-browser']).toEqual({
         command: 'npx',
-        args: ['-y', 'agent-web-interface@latest'],
+        args: ['-y', '@drisp/browser-mcp@latest'],
       });
     } finally {
       await cleanup(dir);
@@ -132,7 +132,7 @@ describe('ClaudeCodeAdapter.apply()', () => {
         mcpServers: Record<string, unknown>;
       };
       expect(mcpJson.mcpServers.other).toEqual({ command: 'other', args: [] });
-      expect(mcpJson.mcpServers['agent-web-interface']).toBeTruthy();
+      expect(mcpJson.mcpServers['drisp-browser']).toBeTruthy();
     } finally {
       await cleanup(dir);
     }
@@ -213,10 +213,10 @@ describe('ClaudeCodeAdapter.apply()', () => {
 });
 
 describe('ClaudeCodeAdapter skill placement', () => {
-  const FAKE_SKILL = `---\nname: agent-web-interface\ndescription: Test skill\n---\n\nBody here.\n`;
+  const FAKE_SKILL = `---\nname: drisp-browser\ndescription: Test skill\n---\n\nBody here.\n`;
   const skillResolver: SkillResolver = () => Promise.resolve({ rawContent: FAKE_SKILL });
 
-  it('places SKILL.md at .claude/skills/agent-web-interface/SKILL.md on claude mcp add success', async () => {
+  it('places SKILL.md at .claude/skills/drisp-browser/SKILL.md on claude mcp add success', async () => {
     const dir = await makeTmpDir();
     try {
       const runner: CommandRunner = () => Promise.resolve(0);
@@ -225,7 +225,7 @@ describe('ClaudeCodeAdapter skill placement', () => {
       await adapter.apply({ scope: 'project', cwd: dir });
 
       const content = await readFile(
-        join(dir, '.claude', 'skills', 'agent-web-interface', 'SKILL.md'),
+        join(dir, '.claude', 'skills', 'drisp-browser', 'SKILL.md'),
         'utf-8'
       );
       expect(content).toBe(FAKE_SKILL);
@@ -248,7 +248,7 @@ describe('ClaudeCodeAdapter skill placement', () => {
       await adapter.apply({ scope: 'project', cwd: dir });
       // Delete skill to simulate partial prior install
       const { rm } = await import('node:fs/promises');
-      await rm(join(dir, '.claude', 'skills', 'agent-web-interface', 'SKILL.md'));
+      await rm(join(dir, '.claude', 'skills', 'drisp-browser', 'SKILL.md'));
 
       // Second apply: .mcp.json unchanged but skill should be re-placed and reported.
       const second = await adapter.apply({ scope: 'project', cwd: dir });
@@ -256,7 +256,7 @@ describe('ClaudeCodeAdapter skill placement', () => {
       expect(second.message).toContain('repaired Claude Code skill');
 
       const content = await readFile(
-        join(dir, '.claude', 'skills', 'agent-web-interface', 'SKILL.md'),
+        join(dir, '.claude', 'skills', 'drisp-browser', 'SKILL.md'),
         'utf-8'
       );
       expect(content).toBe(FAKE_SKILL);
@@ -298,10 +298,10 @@ describe('ClaudeCodeAdapter skill placement', () => {
       await adapter.apply({ scope: 'project', cwd: dir });
 
       const content = await readFile(
-        join(dir, '.claude', 'skills', 'agent-web-interface', 'SKILL.md'),
+        join(dir, '.claude', 'skills', 'drisp-browser', 'SKILL.md'),
         'utf-8'
       );
-      expect(content).toContain('name: agent-web-interface');
+      expect(content).toContain('name: drisp-browser');
     } finally {
       await cleanup(dir);
     }
@@ -321,7 +321,7 @@ describe('ClaudeCodeAdapter skill placement', () => {
 
       const { stat } = await import('node:fs/promises');
       await expect(
-        stat(join(dir, '.claude', 'skills', 'agent-web-interface', 'SKILL.md'))
+        stat(join(dir, '.claude', 'skills', 'drisp-browser', 'SKILL.md'))
       ).rejects.toThrow();
     } finally {
       await cleanup(dir);
@@ -341,6 +341,6 @@ describe('ClaudeCodeAdapter meta', () => {
   it('carries the resolved server command', () => {
     const adapter = new ClaudeCodeAdapter();
     expect(adapter.serverCommand.command).toBe('npx');
-    expect(adapter.serverCommand.args).toContain('agent-web-interface@latest');
+    expect(adapter.serverCommand.args).toContain('@drisp/browser-mcp@latest');
   });
 });

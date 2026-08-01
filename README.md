@@ -1,8 +1,8 @@
-# Agent Web Interface
+# Drisp Browser
 
-Agent Web Interface is an MCP server that gives AI agents a compact, semantic interface to the browser.
+Drisp Browser is an MCP server that gives AI agents a compact, semantic interface to the browser.
 
-**[Website](https://agent-web-interface.com)** · **[npm](https://www.npmjs.com/package/agent-web-interface)** · **[vs. Playwright MCP](https://agent-web-interface.com/vs-playwright-mcp)**
+**[Website](https://drisp.dev)** · **[npm](https://www.npmjs.com/package/@drisp/browser-mcp)** · **[vs. Playwright MCP](https://drisp.dev/vs-playwright-mcp)**
 
 Instead of exposing the full DOM or accessibility tree, it returns structured page snapshots: visible regions, readable content, interactive elements, stable element IDs, form context, screenshots, canvas inspection, and network activity. Agents can then navigate and act on pages using semantic IDs instead of brittle selectors or massive context dumps.
 
@@ -16,7 +16,7 @@ Browser automation is easy for scripts and hard for LLM agents.
 
 Traditional browser tools expose either raw DOM, full accessibility trees, screenshots, or low-level selectors. That works for deterministic code, but it is inefficient for language models. The model has to spend context and reasoning budget separating useful UI intent from implementation noise.
 
-Agent Web Interface changes the interface boundary.
+Drisp Browser changes the interface boundary.
 
 The browser still runs through Puppeteer and Chrome DevTools Protocol, but the agent sees a smaller, more semantic representation of the page:
 
@@ -33,7 +33,7 @@ The goal is not to mirror the browser. The goal is to expose the page in the sha
 
 ## The core abstraction
 
-Agent Web Interface turns a browser page into an agent-readable snapshot.
+Drisp Browser turns a browser page into an agent-readable snapshot.
 
 A snapshot contains compact semantic information such as:
 
@@ -60,7 +60,7 @@ This makes browser use more predictable for agents because observation and actio
 
 ## What it is
 
-Agent Web Interface is:
+Drisp Browser is:
 
 - An MCP server for browser automation
 - A semantic observation layer over Puppeteer and CDP
@@ -68,7 +68,7 @@ Agent Web Interface is:
 - A stable `eid`-based action interface
 - A toolset for navigation, interaction, forms, screenshots, canvas, readability, and network inspection
 
-Agent Web Interface is not:
+Drisp Browser is not:
 
 - A replacement for Puppeteer
 - A general-purpose browser
@@ -76,7 +76,7 @@ Agent Web Interface is not:
 - A scraping framework
 - A CAPTCHA or anti-bot bypass tool
 
-Puppeteer and CDP remain the execution layer. Agent Web Interface changes what the agent sees and how it decides what to do next.
+Puppeteer and CDP remain the execution layer. Drisp Browser changes what the agent sees and how it decides what to do next.
 
 ---
 
@@ -85,18 +85,18 @@ Puppeteer and CDP remain the execution layer. Agent Web Interface changes what t
 At a high level:
 
 1. The agent calls a browser tool through MCP.
-2. Agent Web Interface controls Chrome through Puppeteer and CDP.
+2. Drisp Browser controls Chrome through Puppeteer and CDP.
 3. The current page is reduced into semantic regions, readable content, and actionable elements.
 4. The agent receives a compact snapshot instead of a raw browser dump.
 5. The agent acts using stable element IDs.
-6. Agent Web Interface waits for the page to stabilize and returns the updated state.
+6. Drisp Browser waits for the page to stabilize and returns the updated state.
 
 This keeps browser lifecycle, page representation, and action execution separated.
 
 ```text
 AI Agent
    ↓ MCP
-Agent Web Interface
+Drisp Browser
    ↓ semantic snapshots + stable eids
 Puppeteer / Chrome DevTools Protocol
    ↓
@@ -110,10 +110,10 @@ Chrome / Chromium
 A typical browser-agent loop looks like this:
 
 1. The agent calls `navigate` with a URL.
-2. Agent Web Interface returns a compact page snapshot.
+2. Drisp Browser returns a compact page snapshot.
 3. The agent calls `find` to locate a semantic element, such as a “Sign in” button or an email field.
 4. The agent calls `click`, `type`, `select`, or `press` using the returned `eid`.
-5. Agent Web Interface waits for the page to stabilize and returns the updated snapshot.
+5. Drisp Browser waits for the page to stabilize and returns the updated snapshot.
 6. The agent continues from the changed page state instead of re-reading the entire DOM.
 
 This gives the model a browser interaction loop based on semantic state transitions rather than raw page internals.
@@ -122,7 +122,7 @@ This gives the model a browser interaction loop based on semantic state transiti
 
 ## Example user journey
 
-The following example shows how an agent might use Agent Web Interface inside a dashboard-style web app.
+The following example shows how an agent might use Drisp Browser inside a dashboard-style web app.
 
 Task:
 
@@ -353,7 +353,7 @@ This is the shape after `navigate` when the agent has no previous state.
 
 ### Diff response
 
-For same-page interactions, Agent Web Interface returns only the meaningful change.
+For same-page interactions, Drisp Browser returns only the meaningful change.
 
 ```xml
 <state step="3" title="Sign in | Acme" url="https://app.example.com/login">
@@ -556,7 +556,7 @@ These examples are illustrative, but shaped according to the actual response con
 
 ## Tool surface
 
-Agent Web Interface exposes MCP tools across the main phases of browser use.
+Drisp Browser exposes MCP tools across the main phases of browser use.
 
 ### Session
 
@@ -614,7 +614,7 @@ Agent Web Interface exposes MCP tools across the main phases of browser use.
 Run the interactive installer — it auto-detects which AI tools you have installed and registers the MCP server and agent skill in one step:
 
 ```bash
-npx agent-web-interface install
+npx @drisp/browser-mcp install
 ```
 
 Then ask your AI to use the browser:
@@ -627,22 +627,22 @@ Open https://example.com and summarize the main actions available to a user.
 
 ```bash
 # Claude Code (also installs the agent skill)
-npx agent-web-interface install --harness claude-code
+npx @drisp/browser-mcp install --harness claude-code
 
 # Cursor
-npx agent-web-interface install --harness cursor
+npx @drisp/browser-mcp install --harness cursor
 
 # VS Code
-npx agent-web-interface install --harness vscode
+npx @drisp/browser-mcp install --harness vscode
 
 # Claude Desktop (MCP only — no skill placement)
-npx agent-web-interface install --harness claude-desktop
+npx @drisp/browser-mcp install --harness claude-desktop
 
 # Multiple at once
-npx agent-web-interface install --harness cursor,vscode
+npx @drisp/browser-mcp install --harness cursor,vscode
 
 # All detected harnesses
-npx agent-web-interface install --harness all
+npx @drisp/browser-mcp install --harness all
 ```
 
 ### Install flags
@@ -663,17 +663,17 @@ npx agent-web-interface install --harness all
 ### Check installation status
 
 ```bash
-npx agent-web-interface doctor
+npx @drisp/browser-mcp doctor
 ```
 
 Prints a per-harness status table showing whether the MCP server is registered and whether the agent skill is installed.
 
 ### Skill-only installation (advanced)
 
-The [`agent-web-interface`](skills/agent-web-interface/SKILL.md) skill can also be installed independently — without the MCP server — using [`npx skills`](https://github.com/vercel-labs/skills):
+The [`drisp-browser`](skills/drisp-browser/SKILL.md) skill can also be installed independently — without the MCP server — using [`npx skills`](https://github.com/vercel-labs/skills):
 
 ```bash
-npx skills add lespaceman/agent-web-interface
+npx skills add drisplabs/browser-mcp
 ```
 
 This copies only the skill into your agent's `skills/` directory. You still need to register the MCP server separately (the `install` command above does both). `npx skills` is intentionally kept as a supported alternative for skill-only workflows — see [ADR-0003](docs/adr/0003-keep-npx-skills-alongside-installer.md).
@@ -687,9 +687,9 @@ If you prefer to edit config files manually, add the server under the appropriat
 ```json
 {
   "mcpServers": {
-    "agent-web-interface": {
+    "drisp-browser": {
       "command": "npx",
-      "args": ["agent-web-interface@latest"]
+      "args": ["@drisp/browser-mcp@latest"]
     }
   }
 }
@@ -700,10 +700,10 @@ VS Code uses `servers` instead of `mcpServers` and requires `"type": "stdio"`:
 ```json
 {
   "servers": {
-    "agent-web-interface": {
+    "drisp-browser": {
       "type": "stdio",
       "command": "npx",
-      "args": ["agent-web-interface@latest"]
+      "args": ["@drisp/browser-mcp@latest"]
     }
   }
 }
@@ -714,11 +714,11 @@ To force connection to your existing Chrome session:
 ```json
 {
   "mcpServers": {
-    "agent-web-interface": {
+    "drisp-browser": {
       "command": "npx",
-      "args": ["agent-web-interface@latest"],
+      "args": ["@drisp/browser-mcp@latest"],
       "env": {
-        "AWI_BROWSER_MODE": "user"
+        "DRISP_BROWSER_MODE": "user"
       }
     }
   }
@@ -731,44 +731,44 @@ To force connection to your existing Chrome session:
 
 Browser initialization happens automatically on the first browser tool call.
 
-Set `AWI_BROWSER_MODE` to control how Chrome is started.
+Set `DRISP_BROWSER_MODE` to control how Chrome is started.
 
-| Mode         | Behavior                                             | Profile                                       |
-| ------------ | ---------------------------------------------------- | --------------------------------------------- |
-| unset        | Auto: try `user`, then `persistent`, then `isolated` | Depends on fallback                           |
-| `user`       | Connect to your running Chrome                       | Chrome's default profile                      |
-| `persistent` | Launch Chrome with a dedicated persistent profile    | `~/.cache/agent-web-interface/chrome-profile` |
-| `isolated`   | Launch Chrome with a temporary clean profile         | Deleted on close                              |
+| Mode         | Behavior                                             | Profile                                 |
+| ------------ | ---------------------------------------------------- | --------------------------------------- |
+| unset        | Auto: try `user`, then `persistent`, then `isolated` | Depends on fallback                     |
+| `user`       | Connect to your running Chrome                       | Chrome's default profile                |
+| `persistent` | Launch Chrome with a dedicated persistent profile    | `~/.cache/drisp-browser/chrome-profile` |
+| `isolated`   | Launch Chrome with a temporary clean profile         | Deleted on close                        |
 
 Examples:
 
 ```bash
 # Auto mode
-npx agent-web-interface
+npx @drisp/browser-mcp
 
 # Always connect to existing Chrome
-AWI_BROWSER_MODE=user npx agent-web-interface
+DRISP_BROWSER_MODE=user npx @drisp/browser-mcp
 
 # Always launch with persistent profile
-AWI_BROWSER_MODE=persistent npx agent-web-interface
+DRISP_BROWSER_MODE=persistent npx @drisp/browser-mcp
 
 # Headless isolated browser
-AWI_BROWSER_MODE=isolated AWI_HEADLESS=true npx agent-web-interface
+DRISP_BROWSER_MODE=isolated DRISP_BROWSER_HEADLESS=true npx @drisp/browser-mcp
 ```
 
-### Stealth (`AWI_STEALTH`)
+### Stealth (`DRISP_BROWSER_STEALTH`)
 
 Launched browsers (`persistent`/`isolated`) carry Puppeteer's automation tells —
 `navigator.webdriver`, the "controlled by automated test software" infobar, an empty
 plugins list — which some sites use to false-positive a legitimate session as a bot.
-`AWI_STEALTH` (default `true`) applies **fingerprint-only** patches so a launched Chrome
+`DRISP_BROWSER_STEALTH` (default `true`) applies **fingerprint-only** patches so a launched Chrome
 looks like your everyday Chrome. It changes nothing about behavior (clicks and typing are
 untouched) and is a **no-op in `user` mode**, where the connected Chrome already has a
 genuine fingerprint.
 
 ```bash
 # Disable stealth (raw Puppeteer fingerprint)
-AWI_STEALTH=false AWI_BROWSER_MODE=isolated npx agent-web-interface
+DRISP_BROWSER_STEALTH=false DRISP_BROWSER_MODE=isolated npx @drisp/browser-mcp
 ```
 
 This is not a CAPTCHA or anti-bot bypass tool — it only avoids false-positive blocking of
@@ -778,15 +778,15 @@ ordinary, authorized use.
 
 ## Using your existing Chrome
 
-To connect Agent Web Interface to your regular Chrome profile:
+To connect Drisp Browser to your regular Chrome profile:
 
 1. Open Chrome.
 2. Navigate to `chrome://inspect/#remote-debugging`.
 3. Enable remote debugging and allow the connection.
-4. Start Agent Web Interface with `AWI_BROWSER_MODE=user`.
+4. Start Drisp Browser with `DRISP_BROWSER_MODE=user`.
 
 ```bash
-AWI_BROWSER_MODE=user npx agent-web-interface
+DRISP_BROWSER_MODE=user npx @drisp/browser-mcp
 ```
 
 This is useful when an agent needs access to an already authenticated browser session.
@@ -806,30 +806,30 @@ Examples:
 
 ```bash
 # stdio transport
-npx agent-web-interface
+npx @drisp/browser-mcp
 
 # HTTP transport
-npx agent-web-interface --transport http --port 8080
+npx @drisp/browser-mcp --transport http --port 8080
 ```
 
 ---
 
 ## Environment variables
 
-| Variable           | Description                                              | Default              |
-| ------------------ | -------------------------------------------------------- | -------------------- |
-| `AWI_BROWSER_MODE` | Browser mode: `user`, `persistent`, or `isolated`        | unset; auto fallback |
-| `AWI_HEADLESS`     | Run browser headless: `true` or `false`                  | `false`              |
-| `AWI_CDP_URL`      | Explicit CDP endpoint; overrides browser mode            | unset                |
-| `AWI_TRIM_REGIONS` | Set to `false` to disable region trimming globally       | `true`               |
-| `TRANSPORT`        | Transport mode override, for example `http`              | unset                |
-| `HTTP_HOST`        | Host for HTTP transport                                  | `127.0.0.1`          |
-| `HTTP_PORT`        | Port for HTTP transport                                  | `3000`               |
-| `LOG_LEVEL`        | Logging level                                            | `info`               |
-| `CEF_BRIDGE_HOST`  | CDP host for CEF bridge connection                       | `127.0.0.1`          |
-| `CEF_BRIDGE_PORT`  | CDP port for CEF bridge connection                       | `9223`               |
-| `BRING_TO_FRONT`   | Set to `true` to focus the Chrome tab before each action | `false`              |
-| `CHROME_PATH`      | Path to Chrome executable                                | unset                |
+| Variable                     | Description                                              | Default              |
+| ---------------------------- | -------------------------------------------------------- | -------------------- |
+| `DRISP_BROWSER_MODE`         | Browser mode: `user`, `persistent`, or `isolated`        | unset; auto fallback |
+| `DRISP_BROWSER_HEADLESS`     | Run browser headless: `true` or `false`                  | `false`              |
+| `DRISP_BROWSER_CDP_URL`      | Explicit CDP endpoint; overrides browser mode            | unset                |
+| `DRISP_BROWSER_TRIM_REGIONS` | Set to `false` to disable region trimming globally       | `true`               |
+| `TRANSPORT`                  | Transport mode override, for example `http`              | unset                |
+| `HTTP_HOST`                  | Host for HTTP transport                                  | `127.0.0.1`          |
+| `HTTP_PORT`                  | Port for HTTP transport                                  | `3000`               |
+| `LOG_LEVEL`                  | Logging level                                            | `info`               |
+| `CEF_BRIDGE_HOST`            | CDP host for CEF bridge connection                       | `127.0.0.1`          |
+| `CEF_BRIDGE_PORT`            | CDP port for CEF bridge connection                       | `9223`               |
+| `BRING_TO_FRONT`             | Set to `true` to focus the Chrome tab before each action | `false`              |
+| `CHROME_PATH`                | Path to Chrome executable                                | unset                |
 
 ---
 
@@ -849,7 +849,7 @@ These results are not yet a formal benchmark suite. They are task-dependent and 
 
 ## Architecture overview
 
-Agent Web Interface separates browser automation into three layers.
+Drisp Browser separates browser automation into three layers.
 
 ### Browser lifecycle
 
@@ -889,8 +889,8 @@ This separation lets the browser implementation evolve while keeping the agent-v
 Clone the repository:
 
 ```bash
-git clone https://github.com/lespaceman/agent-web-interface
-cd agent-web-interface
+git clone https://github.com/drisplabs/browser-mcp
+cd browser-mcp
 npm install
 ```
 
@@ -942,7 +942,7 @@ npm run mcp:inspect
 
 ## Status
 
-Agent Web Interface is under active development.
+Drisp Browser is under active development.
 
 The public tool surface is intended to stay simple, but internal APIs and snapshot formats may evolve as real-world agent usage informs the design.
 

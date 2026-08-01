@@ -83,7 +83,7 @@ export function parseInstallFlags(argv: string[]): ParsedInstallFlags {
 }
 
 export function buildServerCommand(flags: ParsedInstallFlags): ServerCommand {
-  const packageSpec = flags.pin ? `agent-web-interface@${flags.pin}` : 'agent-web-interface@latest';
+  const packageSpec = flags.pin ? `@drisp/browser-mcp@${flags.pin}` : '@drisp/browser-mcp@latest';
   const args = ['-y', packageSpec];
 
   if (flags.browserMode !== 'auto') {

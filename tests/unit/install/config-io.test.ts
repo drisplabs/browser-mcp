@@ -18,9 +18,9 @@ describe('mergeAtPath', () => {
       mcpServers: { other: { command: 'other-cmd', args: [] } },
       unrelated: 'keep-me',
     };
-    const { merged, changed } = mergeAtPath(existing, ['mcpServers', 'agent-web-interface'], {
+    const { merged, changed } = mergeAtPath(existing, ['mcpServers', 'drisp-browser'], {
       command: 'npx',
-      args: ['-y', 'agent-web-interface@latest'],
+      args: ['-y', '@drisp/browser-mcp@latest'],
     });
 
     expect(changed).toBe(true);
@@ -29,32 +29,32 @@ describe('mergeAtPath', () => {
       command: 'other-cmd',
       args: [],
     });
-    expect((merged.mcpServers as Record<string, unknown>)['agent-web-interface']).toEqual({
+    expect((merged.mcpServers as Record<string, unknown>)['drisp-browser']).toEqual({
       command: 'npx',
-      args: ['-y', 'agent-web-interface@latest'],
+      args: ['-y', '@drisp/browser-mcp@latest'],
     });
   });
 
   it('returns changed=false when the value is already present and identical', () => {
     const existing = {
       mcpServers: {
-        'agent-web-interface': { command: 'npx', args: ['-y', 'agent-web-interface@latest'] },
+        'drisp-browser': { command: 'npx', args: ['-y', '@drisp/browser-mcp@latest'] },
       },
     };
-    const { changed } = mergeAtPath(existing, ['mcpServers', 'agent-web-interface'], {
+    const { changed } = mergeAtPath(existing, ['mcpServers', 'drisp-browser'], {
       command: 'npx',
-      args: ['-y', 'agent-web-interface@latest'],
+      args: ['-y', '@drisp/browser-mcp@latest'],
     });
     expect(changed).toBe(false);
   });
 
   it('creates intermediate keys when they are missing', () => {
-    const { merged, changed } = mergeAtPath({}, ['mcpServers', 'agent-web-interface'], {
+    const { merged, changed } = mergeAtPath({}, ['mcpServers', 'drisp-browser'], {
       command: 'npx',
       args: [],
     });
     expect(changed).toBe(true);
-    expect((merged.mcpServers as Record<string, unknown>)['agent-web-interface']).toEqual({
+    expect((merged.mcpServers as Record<string, unknown>)['drisp-browser']).toEqual({
       command: 'npx',
       args: [],
     });
@@ -145,13 +145,13 @@ describe('writeJsonAtomic', () => {
     const dir = await makeTmpDir();
     try {
       const path = join(dir, '.mcp.json');
-      const entry = { command: 'npx', args: ['-y', 'agent-web-interface@latest'] };
+      const entry = { command: 'npx', args: ['-y', '@drisp/browser-mcp@latest'] };
 
       // First run
       const existing1 = await readJsonConfig(path);
       const { merged: merged1, changed: changed1 } = mergeAtPath(
         existing1,
-        ['mcpServers', 'agent-web-interface'],
+        ['mcpServers', 'drisp-browser'],
         entry
       );
       expect(changed1).toBe(true);
@@ -159,11 +159,7 @@ describe('writeJsonAtomic', () => {
 
       // Second run
       const existing2 = await readJsonConfig(path);
-      const { changed: changed2 } = mergeAtPath(
-        existing2,
-        ['mcpServers', 'agent-web-interface'],
-        entry
-      );
+      const { changed: changed2 } = mergeAtPath(existing2, ['mcpServers', 'drisp-browser'], entry);
       expect(changed2).toBe(false);
     } finally {
       await cleanup(dir);

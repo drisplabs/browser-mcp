@@ -1,10 +1,10 @@
 {
   "version": 1,
   "skills": {
-    "agent-web-interface": {
-      "source": "lespaceman/agent-web-interface",
+    "drisp-browser": {
+      "source": "drisplabs/browser-mcp",
       "sourceType": "github",
-      "skillPath": "skills/agent-web-interface/SKILL.md",
+      "skillPath": "skills/drisp-browser/SKILL.md",
       "computedHash": "76952e2c466a5942e97f901fc669dce29ff19ef4eb9c2c64e2bbb633a6235e2c"
     },
     "diagnose": {

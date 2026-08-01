@@ -23,7 +23,7 @@ export async function runDoctor(opts: DoctorOpts = {}): Promise<void> {
   const { cwd = process.cwd(), homeDir, platform } = opts;
   const adapters = buildAdapters({ homeDir, platform });
 
-  process.stdout.write('\n  agent-web-interface status\n\n');
+  process.stdout.write('\n  drisp-browser-mcp status\n\n');
   process.stdout.write('  Harness          MCP    Skill\n');
   process.stdout.write('  ───────────────  ─────  ─────\n');
 

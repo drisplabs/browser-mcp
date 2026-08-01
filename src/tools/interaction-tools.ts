@@ -51,6 +51,7 @@ import { ATTACHMENT_SIGNIFICANCE_THRESHOLD } from '../observation/observation.ty
 import { validateFilePaths, FileValidationError } from '../non-dom/file-path-validator.js';
 import { resolveAndUploadFiles } from '../non-dom/file-input-resolver.js';
 import type { PageHandle } from '../browser/page-registry.js';
+import { readEnv } from '../shared/env-compat.js';
 
 /** Configured allowed roots for file uploads. Empty = no restriction. */
 const ALLOWED_ROOTS: string[] = process.env.UPLOAD_ALLOWED_ROOTS
@@ -231,9 +232,9 @@ function getConfiguredGeolocation(): { latitude: number; longitude: number; accu
     return Number.isFinite(n) ? n : fallback;
   };
   return {
-    latitude: parse(process.env.AWI_GEOLOCATION_LAT, 0),
-    longitude: parse(process.env.AWI_GEOLOCATION_LON, 0),
-    accuracy: parse(process.env.AWI_GEOLOCATION_ACCURACY, 100),
+    latitude: parse(readEnv('DRISP_BROWSER_GEOLOCATION_LAT', 'AWI_GEOLOCATION_LAT'), 0),
+    longitude: parse(readEnv('DRISP_BROWSER_GEOLOCATION_LON', 'AWI_GEOLOCATION_LON'), 0),
+    accuracy: parse(readEnv('DRISP_BROWSER_GEOLOCATION_ACCURACY', 'AWI_GEOLOCATION_ACCURACY'), 100),
   };
 }
 

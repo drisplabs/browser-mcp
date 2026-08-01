@@ -1,7 +1,7 @@
 # Non-DOM Channel — Agent MCP Test Script
 
 This document drives a step-by-step manual MCP test of the non-DOM interaction channel.
-Run it by pasting the steps into an agent that has access to the `agent-web-interface` MCP server.
+Run it by pasting the steps into an agent that has access to the `drisp-browser` MCP server.
 
 ## Prerequisites
 
@@ -327,14 +327,14 @@ dialog surface is present).
 
 ---
 
-## Test 3a — Download (configured via AWI_DOWNLOAD_DIR)
+## Test 3a — Download (configured via DRISP_BROWSER_DOWNLOAD_DIR)
 
 **Setup (before launching the server):** export the download directory as an
 environment variable. There is no `set_download_behavior` tool — download routing
 is infrastructure configured once at startup.
 
 ```
-export AWI_DOWNLOAD_DIR="/tmp/agent-downloads"
+export DRISP_BROWSER_DOWNLOAD_DIR="/tmp/agent-downloads"
 ```
 
 The directory is validated (must be absolute) and created if missing when the
@@ -367,7 +367,7 @@ the permission is still undecided, a **non-DOM permission surface** appears with
 two controls — `nd-permission-allow` ("Allow") and `nd-permission-deny`
 ("Block"). The page-side call stays pending until the agent clicks one. Clicking
 Allow grants via CDP (and, for geolocation, applies the deterministic coordinates
-from `AWI_GEOLOCATION_LAT`/`LON`/`ACCURACY`, default `0,0,100`); clicking Block
+from `DRISP_BROWSER_GEOLOCATION_LAT`/`LON`/`ACCURACY`, default `0,0,100`); clicking Block
 denies. Already-granted/denied permissions pass straight through with no surface.
 
 > **Camera/microphone (4c/4d):** launch Chrome with
@@ -400,7 +400,7 @@ Tool: click
 ```
 
 **Expected:** Surface clears; status box under "4a" shows coordinates matching the
-configured `AWI_GEOLOCATION_*` values (default lat 0.0000, lon 0.0000). No native
+configured `DRISP_BROWSER_GEOLOCATION_*` values (default lat 0.0000, lon 0.0000). No native
 permission prompt appeared.
 
 ---

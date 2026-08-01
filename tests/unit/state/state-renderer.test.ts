@@ -1167,24 +1167,28 @@ describe('renderStateXml region trimming', () => {
 });
 
 // ============================================================================
-// AWI_TRIM_REGIONS env var tests
+// DRISP_BROWSER_TRIM_REGIONS env var tests
 // ============================================================================
 
-describe('AWI_TRIM_REGIONS env var', () => {
+describe('DRISP_BROWSER_TRIM_REGIONS env var', () => {
   beforeEach(() => {
     vi.resetModules();
   });
 
   afterEach(() => {
+    delete process.env.DRISP_BROWSER_TRIM_REGIONS;
     delete process.env.AWI_TRIM_REGIONS;
   });
 
   /** Re-import the module so the module-level TRIM_ENABLED const is re-evaluated. */
-  async function renderWithEnv(envValue?: string): Promise<string> {
+  async function renderWithEnv(
+    envValue?: string,
+    envVar = 'DRISP_BROWSER_TRIM_REGIONS'
+  ): Promise<string> {
+    delete process.env.DRISP_BROWSER_TRIM_REGIONS;
+    delete process.env.AWI_TRIM_REGIONS;
     if (envValue !== undefined) {
-      process.env.AWI_TRIM_REGIONS = envValue;
-    } else {
-      delete process.env.AWI_TRIM_REGIONS;
+      process.env[envVar] = envValue;
     }
 
     const mod = await import('../../../src/state/state-renderer.js');
@@ -1194,7 +1198,7 @@ describe('AWI_TRIM_REGIONS env var', () => {
     return mod.renderStateXml(createBaselineResponse(actionables), { trimRegions: true });
   }
 
-  it('should disable trimming when AWI_TRIM_REGIONS=false', async () => {
+  it('should disable trimming when DRISP_BROWSER_TRIM_REGIONS=false', async () => {
     const xml = await renderWithEnv('false');
 
     expect(xml).not.toContain('<!-- trimmed');
@@ -1203,10 +1207,19 @@ describe('AWI_TRIM_REGIONS env var', () => {
     }
   });
 
-  it('should enable trimming when AWI_TRIM_REGIONS is unset (default)', async () => {
+  it('should enable trimming when DRISP_BROWSER_TRIM_REGIONS is unset (default)', async () => {
     const xml = await renderWithEnv(undefined);
 
     expect(xml).toContain('<!-- trimmed 10 items. Use find with region=main to see all -->');
+  });
+
+  it('should honor the legacy AWI_TRIM_REGIONS=false fallback', async () => {
+    const xml = await renderWithEnv('false', 'AWI_TRIM_REGIONS');
+
+    expect(xml).not.toContain('<!-- trimmed');
+    for (let i = 1; i <= 20; i++) {
+      expect(xml).toContain(`id="btn-${i}"`);
+    }
   });
 });
 

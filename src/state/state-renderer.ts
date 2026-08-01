@@ -11,13 +11,14 @@
 import type { StateResponseObject, ActionableInfo, RenderOptions } from './types.js';
 import type { DOMObservation, ObservationGroups } from '../observation/observation.types.js';
 import { escapeXml } from '../lib/text-utils.js';
+import { readEnv } from '../shared/env-compat.js';
 
 // ============================================================================
 // Region Trimming Configuration
 // ============================================================================
 
 /** When 'false', disables region trimming globally regardless of per-tool options. Default: enabled. */
-const TRIM_ENABLED = process.env.AWI_TRIM_REGIONS !== 'false';
+const TRIM_ENABLED = readEnv('DRISP_BROWSER_TRIM_REGIONS', 'AWI_TRIM_REGIONS') !== 'false';
 
 /**
  * Per-region limits for trimming actionable elements in snapshot responses.

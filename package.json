@@ -1,11 +1,11 @@
 {
-  "name": "agent-web-interface",
+  "name": "@drisp/browser-mcp",
   "version": "4.6.7",
   "description": "Token-efficient browser automation MCP for AI agents — semantic page snapshots and stable element IDs.",
   "type": "module",
   "main": "dist/src/index.js",
   "bin": {
-    "agent-web-interface": "./dist/src/index.js"
+    "drisp-browser-mcp": "./dist/src/index.js"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
@@ -41,12 +41,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lespaceman/agent-web-interface.git"
+    "url": "https://github.com/drisplabs/browser-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/lespaceman/agent-web-interface/issues"
+    "url": "https://github.com/drisplabs/browser-mcp/issues"
   },
-  "homepage": "https://agent-web-interface.com",
+  "homepage": "https://drisp.dev",
   "files": [
     "dist/**/*",
     "skills/**",

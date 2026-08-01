@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "agent-web-interface-dev": {
+    "drisp-browser-dev": {
       "command": "node",
       "args": ["dist/src/index.js"],
-      "cwd": "/Users/nadeem/athena/agent-web-interface"
+      "cwd": "."
     }
   }
 }

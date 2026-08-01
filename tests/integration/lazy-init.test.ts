@@ -81,8 +81,8 @@ describe('Lazy Browser Initialization (SessionController)', () => {
     expect(controller.getSessionManager().isRunning()).toBe(true);
   });
 
-  it('connects when AWI_CDP_URL env var is set', async () => {
-    process.env.AWI_CDP_URL = 'http://localhost:9222';
+  it('connects when DRISP_BROWSER_CDP_URL env var is set', async () => {
+    process.env.DRISP_BROWSER_CDP_URL = 'http://localhost:9222';
     try {
       const controller = new SessionController({
         sessionId: 'test-connect',
@@ -95,7 +95,7 @@ describe('Lazy Browser Initialization (SessionController)', () => {
       expect(puppeteer.connect).toHaveBeenCalled();
       expect(controller.getSessionManager().isRunning()).toBe(true);
     } finally {
-      delete process.env.AWI_CDP_URL;
+      delete process.env.DRISP_BROWSER_CDP_URL;
     }
   });
 

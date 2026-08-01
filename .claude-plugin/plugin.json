@@ -1,5 +1,5 @@
 {
-  "name": "agent-web-interface",
+  "name": "drisp-browser",
   "version": "0.1.0",
   "description": "Claude Code plugin for browser automation"
 }

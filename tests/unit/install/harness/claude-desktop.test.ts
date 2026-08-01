@@ -56,9 +56,9 @@ describe('ClaudeDesktopAdapter.apply()', () => {
       const config = JSON.parse(await readFile(configPath, 'utf-8')) as {
         mcpServers: Record<string, { command: string; args: string[] }>;
       };
-      expect(config.mcpServers['agent-web-interface']).toEqual({
+      expect(config.mcpServers['drisp-browser']).toEqual({
         command: 'npx',
-        args: ['-y', 'agent-web-interface@latest'],
+        args: ['-y', '@drisp/browser-mcp@latest'],
       });
     } finally {
       await cleanup(dir);
@@ -90,7 +90,7 @@ describe('ClaudeDesktopAdapter.apply()', () => {
         command: 'node',
         args: ['other.js'],
       });
-      expect(config.mcpServers['agent-web-interface']).toBeDefined();
+      expect(config.mcpServers['drisp-browser']).toBeDefined();
     } finally {
       await cleanup(dir);
     }
@@ -138,7 +138,7 @@ describe('ClaudeDesktopAdapter.apply()', () => {
       const config = JSON.parse(await readFile(configPath, 'utf-8')) as {
         mcpServers: Record<string, unknown>;
       };
-      expect(config.mcpServers['agent-web-interface']).toBeDefined();
+      expect(config.mcpServers['drisp-browser']).toBeDefined();
     } finally {
       await cleanup(dir);
     }

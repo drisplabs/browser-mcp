@@ -93,7 +93,7 @@ export async function runInstall(argv: string[], deps: InstallDeps = {}): Promis
   if (flags.harnesses.length > 0 || flags.yes || !isTTY) {
     if (flags.harnesses.length === 0) {
       process.stderr.write(
-        'Usage: agent-web-interface install --harness <id|all|csv>\n' +
+        'Usage: drisp-browser-mcp install --harness <id|all|csv>\n' +
           `Available harnesses: ${ALL_ADAPTERS.map((a) => a.id).join(', ')}\n` +
           'Hint: use --harness all to install to all detected harnesses\n'
       );

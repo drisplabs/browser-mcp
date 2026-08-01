@@ -17,12 +17,12 @@ export interface VSCodeAdapterDeps {
   skillResolver?: SkillResolver;
 }
 
-const SERVER_NAME = 'agent-web-interface';
+const SERVER_NAME = 'drisp-browser';
 
 // VS Code uses `servers` key + `type: "stdio"` (not `mcpServers`)
 const SERVER_COMMAND: ServerCommand = {
   command: 'npx',
-  args: ['-y', 'agent-web-interface@latest'],
+  args: ['-y', '@drisp/browser-mcp@latest'],
 };
 
 function buildInstructionsContent(body: string): string {

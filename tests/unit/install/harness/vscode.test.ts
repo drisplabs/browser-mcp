@@ -12,10 +12,10 @@ async function cleanup(dir: string): Promise<void> {
   await rm(dir, { recursive: true, force: true });
 }
 
-const FAKE_SKILL_BODY = '# Agent Web Interface Guide\n\nFake skill body content.\n';
+const FAKE_SKILL_BODY = '# Drisp Browser Guide\n\nFake skill body content.\n';
 
 const FAKE_SKILL_META = {
-  name: 'agent-web-interface',
+  name: 'drisp-browser',
   description: 'Drive a real browser against a live or staging website.',
 };
 
@@ -23,7 +23,7 @@ function makeSkillResolver(): SkillResolver {
   return () =>
     Promise.resolve({
       meta: FAKE_SKILL_META,
-      rawContent: `---\nname: agent-web-interface\ndescription: ${FAKE_SKILL_META.description}\n---\n${FAKE_SKILL_BODY}`,
+      rawContent: `---\nname: drisp-browser\ndescription: ${FAKE_SKILL_META.description}\n---\n${FAKE_SKILL_BODY}`,
       body: FAKE_SKILL_BODY,
     });
 }
@@ -57,11 +57,11 @@ describe('VSCodeAdapter.apply() — MCP registration', () => {
       const raw = JSON.parse(await readFile(join(dir, '.vscode', 'mcp.json'), 'utf-8')) as {
         servers: Record<string, { type: string; command: string; args: string[] }>;
       };
-      const entry = raw.servers['agent-web-interface'];
+      const entry = raw.servers['drisp-browser'];
       expect(entry).toBeDefined();
       expect(entry.type).toBe('stdio');
       expect(entry.command).toBe('npx');
-      expect(entry.args).toEqual(['-y', 'agent-web-interface@latest']);
+      expect(entry.args).toEqual(['-y', '@drisp/browser-mcp@latest']);
     } finally {
       await cleanup(dir);
     }
@@ -91,7 +91,7 @@ describe('VSCodeAdapter.apply() — MCP registration', () => {
         command: 'node',
         args: ['other.js'],
       });
-      expect(raw.servers['agent-web-interface']).toBeDefined();
+      expect(raw.servers['drisp-browser']).toBeDefined();
     } finally {
       await cleanup(dir);
     }
@@ -127,14 +127,14 @@ describe('VSCodeAdapter.apply() — MCP registration', () => {
 });
 
 describe('VSCodeAdapter.apply() — skill placement', () => {
-  it('writes .github/instructions/agent-web-interface.instructions.md', async () => {
+  it('writes .github/instructions/drisp-browser.instructions.md', async () => {
     const dir = await makeTmpDir();
     try {
       const adapter = new VSCodeAdapter({ skillResolver: makeSkillResolver() });
       await adapter.apply({ scope: 'project', cwd: dir });
 
       const instrContent = await readFile(
-        join(dir, '.github', 'instructions', 'agent-web-interface.instructions.md'),
+        join(dir, '.github', 'instructions', 'drisp-browser.instructions.md'),
         'utf-8'
       );
       expect(instrContent).toContain('applyTo:');
@@ -170,7 +170,7 @@ describe('VSCodeAdapter.apply() — skill placement', () => {
       await adapter.apply({ scope: 'project', cwd: dir });
 
       const instrContent = await readFile(
-        join(dir, '.github', 'instructions', 'agent-web-interface.instructions.md'),
+        join(dir, '.github', 'instructions', 'drisp-browser.instructions.md'),
         'utf-8'
       );
       const frontmatterMatches = instrContent.match(/^---$/gm);
@@ -206,7 +206,7 @@ describe('VSCodeAdapter.status()', () => {
     }
   });
 
-  it('returns configured=true when agent-web-interface is in .vscode/mcp.json', async () => {
+  it('returns configured=true when drisp-browser is in .vscode/mcp.json', async () => {
     const dir = await makeTmpDir();
     try {
       const adapter = new VSCodeAdapter({ skillResolver: makeSkillResolver() });

@@ -54,7 +54,7 @@ export type { Page };
 export const DEFAULT_USER_DATA_DIR = path.join(
   os.homedir(),
   '.cache',
-  'agent-web-interface',
+  'drisp-browser',
   'chrome-profile'
 );
 
@@ -88,7 +88,7 @@ export class SessionManager {
   private _lastWsEndpoint: string | undefined;
   /** Promise for in-flight launch/connect operation */
   private _connectionPromise: Promise<void> | null = null;
-  /** Absolute download directory (AWI_DOWNLOAD_DIR), or undefined for browser default. */
+  /** Absolute download directory (DRISP_BROWSER_DOWNLOAD_DIR), or undefined for browser default. */
   private readonly downloadDir?: string;
 
   constructor(downloadDir?: string) {
@@ -1295,7 +1295,7 @@ export class SessionManager {
         });
       });
 
-      // Route downloads to AWI_DOWNLOAD_DIR when configured. Opt-in: when the
+      // Route downloads to DRISP_BROWSER_DOWNLOAD_DIR when configured. Opt-in: when the
       // dir is unset we leave the browser's default download behavior intact.
       if (this.downloadDir) {
         const downloadManager = getOrCreateDownloadManager(page, this.downloadDir);

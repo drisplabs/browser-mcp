@@ -5,11 +5,11 @@
  * Supports three modes: user (connect to existing Chrome), persistent
  * (launch with dedicated profile), and isolated (launch with temp profile).
  *
- * Mode is determined by AWI_BROWSER_MODE env var:
+ * Mode is determined by DRISP_BROWSER_MODE env var:
  *   - Set explicitly → try that mode only, fail on error
  *   - Unset (auto)   → fallback chain: user → persistent → isolated
  *
- * AWI_CDP_URL overrides everything — connect to explicit endpoint, no fallback.
+ * DRISP_BROWSER_CDP_URL overrides everything — connect to explicit endpoint, no fallback.
  */
 
 import type { SessionManager } from './session-manager.js';
@@ -19,7 +19,7 @@ import { getLogger } from '../shared/services/logging.service.js';
 
 const logger = getLogger();
 
-/** Auto-mode fallback order when AWI_BROWSER_MODE is unset */
+/** Auto-mode fallback order when DRISP_BROWSER_MODE is unset */
 const AUTO_FALLBACK_CHAIN: BrowserMode[] = ['user', 'persistent', 'isolated'];
 
 /**

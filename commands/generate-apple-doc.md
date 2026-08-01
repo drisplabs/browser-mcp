@@ -1,11 +1,11 @@
 ---
 description: Navigate apple.com, add iPhone 17 to cart, and generate a documented tool-use example with token analysis
-allowed-tools: mcp__agent-web-interface__navigate, mcp__agent-web-interface__click, mcp__agent-web-interface__find_elements, mcp__agent-web-interface__scroll_page, mcp__agent-web-interface__scroll_element_into_view, mcp__agent-web-interface__capture_snapshot, mcp__agent-web-interface__close_session, mcp__agent-web-interface__type, mcp__agent-web-interface__get_element_details, Read, Write, Bash, Glob, Edit
+allowed-tools: mcp__drisp-browser__navigate, mcp__drisp-browser__click, mcp__drisp-browser__find_elements, mcp__drisp-browser__scroll_page, mcp__drisp-browser__scroll_element_into_view, mcp__drisp-browser__capture_snapshot, mcp__drisp-browser__close_session, mcp__drisp-browser__type, mcp__drisp-browser__get_element_details, Read, Write, Bash, Glob, Edit
 ---
 
 # Generate Apple.com iPhone-to-Cart Tool Use Example
 
-You are generating a documented tool-use example for agent-web-interface. You will drive a live browser session through apple.com's iPhone purchase flow, record every tool call and response, then produce a comprehensive markdown document with token analysis.
+You are generating a documented tool-use example for Drisp Browser. You will drive a live browser session through apple.com's iPhone purchase flow, record every tool call and response, then produce a comprehensive markdown document with token analysis.
 
 ## Output File
 
@@ -13,9 +13,9 @@ Write the final document to: `docs/examples/tool-use-example-add-iphone-to-cart.
 
 ## Phase 1: Browser Automation
 
-Execute the following steps using agent-web-interface tools. After EACH tool call, record:
+Execute the following steps using Drisp Browser tools. After EACH tool call, record:
 
-- The tool name (without the `mcp__agent-web-interface__` prefix)
+- The tool name (without the `mcp__drisp-browser__` prefix)
 - The exact input JSON you sent
 - The full XML response you received (you will trim it later for the doc)
 
@@ -142,7 +142,7 @@ Find the current session's JSONL transcript file by running:
 ls -t ~/.claude/projects/$(echo "$PWD" | sed 's|/|-|g; s|^-||')/*.jsonl | head -1
 ````
 
-Save this path to a variable — you'll pass it to the analysis scripts. Read the file to confirm it contains this session's MCP tool calls (look for `agent-web-interface` in the content).
+Save this path to a variable — you'll pass it to the analysis scripts. Read the file to confirm it contains this session's MCP tool calls (look for `drisp-browser` in the content).
 
 ### Step 3b: Count tokens per tool call
 

@@ -28,10 +28,10 @@ async function main() {
     for (const block of content) {
       if (
         block.type === "tool_use" &&
-        (block.name || "").includes("agent-web-interface")
+        (block.name || "").includes("drisp-browser")
       ) {
         toolCalls.push({
-          name: block.name.replace("mcp__agent-web-interface-dev__", ""),
+          name: block.name.replace("mcp__drisp-browser-dev__", ""),
           input: block.input,
           id: block.id,
         });

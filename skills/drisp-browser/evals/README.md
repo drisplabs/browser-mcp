@@ -1,4 +1,4 @@
-# Trigger eval — `agent-web-interface` skill description
+# Trigger eval — `drisp-browser` skill description
 
 Eval set for testing whether the skill's `description` triggers reliably. Follows
 the [agentskills.io description-optimization](https://agentskills.io) loop:

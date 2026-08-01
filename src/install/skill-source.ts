@@ -12,8 +12,9 @@ export interface SkillContent {
   body: string;
 }
 
-const PACKAGE_NAME = 'agent-web-interface';
-const SKILL_REL_PATH = `skills/${PACKAGE_NAME}/SKILL.md`;
+const PACKAGE_NAME = '@drisp/browser-mcp';
+const SKILL_DIR = 'drisp-browser';
+const SKILL_REL_PATH = `skills/${SKILL_DIR}/SKILL.md`;
 
 async function isPackageRoot(dir: string): Promise<boolean> {
   try {
