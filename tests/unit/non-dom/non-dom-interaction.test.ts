@@ -513,6 +513,7 @@ describe('click — DOM element: dialog detection post-click', () => {
     mockDialogManager.getPendingDialog.mockReturnValue(null);
     mockDialogManager.wasFileChooserOpenedSince.mockReturnValue(false);
     mockPermissionDetector.getPendingPermission.mockReturnValue(null);
+    mockStabilizeAfterAction.mockResolvedValue({ status: 'stable' });
     ctx = makeCtx();
   });
 
@@ -577,6 +578,30 @@ describe('click — DOM element: dialog detection post-click', () => {
 
     expect(mockBuildFilePickerSurface).toHaveBeenCalledWith(99, 'selectSingle');
     expect(mockSetSurface).toHaveBeenCalled();
+    expect(result).toContain('<non_dom />');
+  });
+
+  it('detects a file chooser whose CDP event only arrives during stabilization', async () => {
+    // Regression (#105): Input.dispatchMouseEvent is acknowledged before Chrome
+    // emits Page.fileChooserOpened, so reading the flag straight after the click
+    // always lost the race — the event landed milliseconds later and was only
+    // ever seen by the NEXT action. The flag must be read after stabilization.
+    let chooserOpened = false;
+    mockDialogManager.wasFileChooserOpenedSince.mockImplementation(() => chooserOpened);
+    mockDialogManager.getFileChooserState.mockReturnValue({
+      opened: true,
+      timestamp: Date.now(),
+      backendNodeId: 77,
+      mode: 'selectSingle',
+    });
+    mockStabilizeAfterAction.mockImplementation(() => {
+      chooserOpened = true;
+      return Promise.resolve({ status: 'stable' });
+    });
+
+    const result = await click({ page_id: 'test-page', eid: 'e1' }, ctx);
+
+    expect(mockBuildFilePickerSurface).toHaveBeenCalledWith(77, 'selectSingle');
     expect(result).toContain('<non_dom />');
   });
 

@@ -348,6 +348,9 @@ export interface NodeAttributes {
 
   /** Input/select name attribute */
   name?: string;
+
+  /** Whether a file input or select accepts more than one value */
+  multiple?: boolean;
 }
 
 // ============================================================================

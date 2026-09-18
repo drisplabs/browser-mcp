@@ -59,11 +59,35 @@ describe('extractAttributes', () => {
       expect(result?.input_type).toBe('password');
     });
 
-    it('should not extract input type for non-input kinds', () => {
-      const domNode = createDomNode('INPUT', { type: 'text' });
+    it('should not extract input type for non-input elements', () => {
+      const domNode = createDomNode('BUTTON', { type: 'submit' });
       const result = extractAttributes(domNode, 'button');
 
       expect(result?.input_type).toBeUndefined();
+    });
+
+    // Regression (#105): Chrome's AX tree reports <input type="file"> with
+    // role="button", so the extractor must key off the DOM tag too — the click
+    // handler's file-input fast path reads input_type to build the picker surface.
+    it('should extract input type for a file input classified as a button', () => {
+      const domNode = createDomNode('INPUT', { type: 'file' });
+      const result = extractAttributes(domNode, 'button');
+
+      expect(result?.input_type).toBe('file');
+    });
+
+    it('should mark a multi-file input as multiple', () => {
+      const domNode = createDomNode('INPUT', { type: 'file', multiple: '' });
+      const result = extractAttributes(domNode, 'button');
+
+      expect(result?.multiple).toBe(true);
+    });
+
+    it('should leave multiple unset for a single-file input', () => {
+      const domNode = createDomNode('INPUT', { type: 'file' });
+      const result = extractAttributes(domNode, 'button');
+
+      expect(result?.multiple).toBeUndefined();
     });
   });
 

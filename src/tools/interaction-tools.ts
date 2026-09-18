@@ -420,29 +420,30 @@ async function clickElementWithNonDomDetection(
     return stateXml + '\n' + renderNonDomSurface(surface);
   }
 
-  // 2. File chooser intercepted?
+  // 2. Stabilization is the wait window the click already pays (network-idle +
+  //    DOM render). Both remaining non-DOM signals — an intercepted file chooser
+  //    and a permission request — arrive over CDP *during* that window, after
+  //    Input.dispatchMouseEvent has already been acknowledged. Reading either
+  //    flag before stabilizing loses the race: the event lands milliseconds
+  //    later and is only ever seen by the *next* action. Neither surface blocks
+  //    the renderer, so stabilizing first and recapturing afterward is safe and
+  //    costs no extra latency.
+  const permissionDetector = getOrCreatePermissionDetector(handle.page);
+  await stabilizeAfterAction(handle.page);
+
+  // 3. File chooser intercepted?
   if (dialogManager.wasFileChooserOpenedSince(beforeClickTs)) {
     const chooserState = dialogManager.getFileChooserState();
     dialogManager.clearFileChooser();
     const surface = buildFilePickerSurface(chooserState.backendNodeId, chooserState.mode);
     setSurface(handle.page, surface);
 
-    // File chooser interception is non-blocking — stabilization is safe
-    await stabilizeAfterAction(handle.page);
     const captureResult = await captureSnapshot();
     ctx.getSnapshotStore().store(pageId, captureResult.snapshot);
     const stateManager = ctx.getStateManager(pageId);
     const stateXml = stateManager.generateResponse(captureResult.snapshot);
     return stateXml + '\n' + renderNonDomSurface(surface);
   }
-
-  // 3. Stabilization is the wait window the click already pays (network-idle +
-  //    DOM render). A permission requested by the click's handler fires over the
-  //    CDP binding *during* this window, so we stabilize first and then read the
-  //    flag — zero added latency, no fixed-interval poll. A permission prompt
-  //    does not block the renderer, so recapture afterward is safe.
-  const permissionDetector = getOrCreatePermissionDetector(handle.page);
-  await stabilizeAfterAction(handle.page);
 
   const pendingPermission = permissionDetector.getPendingPermission();
   if (pendingPermission) {
@@ -604,7 +605,7 @@ export async function click(
     if (attrs?.input_type === 'file') {
       const surface = buildFilePickerSurfaceForInput(
         node.backend_node_id,
-        (attrs?.multiple as boolean | undefined) !== undefined
+        attrs?.multiple === true
       );
       setSurface(handleRef.current.page, surface);
 
