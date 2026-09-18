@@ -128,21 +128,11 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
-      - name: Run npm audit
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
+      - name: Report full audit (informational)
+        run: npm audit || true
 
-      - name: Check for vulnerabilities
-        run: |
-          # Capture audit result (ignore exit code with || true)
-          AUDIT_RESULT=$(npm audit --json || true)
-          CRITICAL=$(echo $AUDIT_RESULT | jq '.metadata.vulnerabilities.critical // 0')
-          HIGH=$(echo $AUDIT_RESULT | jq '.metadata.vulnerabilities.high // 0')
-
-          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-            echo "Found $CRITICAL critical and $HIGH high severity vulnerabilities"
-            echo "Please review and fix these vulnerabilities"
-            npm audit || true
-            exit 1
-          fi
-          echo "No critical or high severity vulnerabilities found"
+      # Fails on any high/critical advisory that is not covered by a justified,
+      # unexpired entry in .github/audit-allowlist.json, and on allowlist entries
+      # that have expired or gone stale. See scripts/audit-gate.mjs.
+      - name: Security Audit gate
+        run: npm run audit:gate
