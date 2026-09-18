@@ -210,9 +210,19 @@ export function extractAttributes(
   const attrs: NodeAttributes = {};
   const domAttrs = domNode.attributes ?? {};
 
-  // Input type (for input and combobox kinds)
-  if ((kind === 'input' || kind === 'combobox') && domAttrs.type) {
+  // Input type. Keyed off the DOM tag as well as the semantic kind: Chrome's
+  // accessibility tree reports <input type="file"> as role="button", so a
+  // kind-only check would drop input_type for exactly the node that needs it.
+  if (
+    (kind === 'input' || kind === 'combobox' || domNode.nodeName.toLowerCase() === 'input') &&
+    domAttrs.type
+  ) {
     attrs.input_type = domAttrs.type;
+  }
+
+  // `multiple` is a boolean attribute: present means true regardless of value.
+  if (domAttrs.multiple !== undefined) {
+    attrs.multiple = true;
   }
 
   // Placeholder (any kind)

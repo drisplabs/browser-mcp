@@ -10,6 +10,7 @@
 
 import type { CdpClient, CdpEventHandler } from '../cdp/cdp-client.interface.js';
 import type { Page } from 'puppeteer-core';
+import { getLogger } from '../shared/services/logging.service.js';
 
 export type DialogType = 'alert' | 'confirm' | 'prompt' | 'beforeunload';
 
@@ -102,11 +103,18 @@ export class DialogManager {
     };
     cdp.on('Page.fileChooserOpened', this._fileChooserHandler);
 
-    // Enable file chooser interception so OS picker never opens
+    // Enable file chooser interception so OS picker never opens.
+    // Non-fatal: some Chrome versions or headless modes may not support this —
+    // but a silent failure is worse than the failure. Without interception a
+    // real OS picker opens on the next upload click and the session hangs with
+    // no signal at all, which is precisely what made #105 hard to diagnose.
     try {
       await cdp.send('Page.setInterceptFileChooserDialog', { enabled: true });
-    } catch {
-      // Non-fatal: some Chrome versions or headless modes may not support this
+    } catch (err) {
+      getLogger().warning(
+        'File chooser interception could not be enabled; upload clicks may open a native OS picker',
+        { error: err instanceof Error ? err.message : String(err) }
+      );
     }
   }
 

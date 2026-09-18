@@ -420,29 +420,33 @@ async function clickElementWithNonDomDetection(
     return stateXml + '\n' + renderNonDomSurface(surface);
   }
 
-  // 2. File chooser intercepted?
+  // 2. Stabilization is the wait window the click already pays (network-idle +
+  //    DOM render). Both remaining non-DOM signals — an intercepted file chooser
+  //    and a permission request — arrive over CDP *during* that window, after
+  //    Input.dispatchMouseEvent has already been acknowledged. Reading either
+  //    flag before stabilizing loses the race: the event lands milliseconds
+  //    later and is only ever seen by the *next* action. stabilizeDom always
+  //    arms its quiet timer (DEFAULT_QUIET_WINDOW_MS = 100ms) before it can
+  //    resolve, so this window cannot close inside the observed ~5ms lag.
+  //    Both are `blocking` surfaces for the agent, but neither blocks the
+  //    page's renderer the way a JavaScript dialog does, so stabilizing first
+  //    and recapturing afterward is safe and costs no extra latency.
+  const permissionDetector = getOrCreatePermissionDetector(handle.page);
+  await stabilizeAfterAction(handle.page);
+
+  // 3. File chooser intercepted?
   if (dialogManager.wasFileChooserOpenedSince(beforeClickTs)) {
     const chooserState = dialogManager.getFileChooserState();
     dialogManager.clearFileChooser();
     const surface = buildFilePickerSurface(chooserState.backendNodeId, chooserState.mode);
     setSurface(handle.page, surface);
 
-    // File chooser interception is non-blocking — stabilization is safe
-    await stabilizeAfterAction(handle.page);
     const captureResult = await captureSnapshot();
     ctx.getSnapshotStore().store(pageId, captureResult.snapshot);
     const stateManager = ctx.getStateManager(pageId);
     const stateXml = stateManager.generateResponse(captureResult.snapshot);
     return stateXml + '\n' + renderNonDomSurface(surface);
   }
-
-  // 3. Stabilization is the wait window the click already pays (network-idle +
-  //    DOM render). A permission requested by the click's handler fires over the
-  //    CDP binding *during* this window, so we stabilize first and then read the
-  //    flag — zero added latency, no fixed-interval poll. A permission prompt
-  //    does not block the renderer, so recapture afterward is safe.
-  const permissionDetector = getOrCreatePermissionDetector(handle.page);
-  await stabilizeAfterAction(handle.page);
 
   const pendingPermission = permissionDetector.getPendingPermission();
   if (pendingPermission) {
@@ -593,7 +597,7 @@ export async function click(
     // DOM element click
     const snap = ctx.requireSnapshot(pageId);
     const node = ctx.resolveElementByEid(pageId, input.eid!, snap);
-    const attrs = node.attributes as Record<string, unknown> | undefined;
+    const attrs = node.attributes;
 
     // Direct file-input fast path: when the snapshot already says this node is an
     // input[type=file], build the picker surface without dispatching a real click
@@ -602,10 +606,7 @@ export async function click(
     // they emit Page.fileChooserOpened on the real click and are caught by the
     // wasFileChooserOpenedSince flag in clickElementWithNonDomDetection.
     if (attrs?.input_type === 'file') {
-      const surface = buildFilePickerSurfaceForInput(
-        node.backend_node_id,
-        (attrs?.multiple as boolean | undefined) !== undefined
-      );
+      const surface = buildFilePickerSurfaceForInput(node.backend_node_id, attrs.multiple === true);
       setSurface(handleRef.current.page, surface);
 
       const captureResult = await captureSnapshot();

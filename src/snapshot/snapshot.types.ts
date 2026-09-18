@@ -348,6 +348,9 @@ export interface NodeAttributes {
 
   /** Input/select name attribute */
   name?: string;
+
+  /** Present when the element carries the `multiple` boolean attribute (file input, select) */
+  multiple?: boolean;
 }
 
 // ============================================================================
