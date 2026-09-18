@@ -181,6 +181,7 @@ beforeEach(() => {
 ## Technical Notes
 
 - All imports use `.js` extensions (ESM with NodeNext resolution)
+- No `upload` tool: file uploads are click-driven via the non-DOM file-picker surface (`nd-picker-*`) — see `docs/upload-files-with-click-type.md`
 - CDP domains (Page, DOM, Network) enabled on-demand
 - Vitest with globals, v8 coverage provider
 - Node >= 20.0.0 required

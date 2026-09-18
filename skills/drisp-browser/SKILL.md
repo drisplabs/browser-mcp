@@ -1,7 +1,7 @@
 ---
 name: drisp-browser
 description: >
-  Drive a real browser against a live or staging website with the Drisp Browser (@drisp/browser-mcp) MCP tools (navigate, snapshot, click, type, find, get_form, screenshot, etc.). Load it whenever the task is to actually open a URL and observe or act on the running page: read live page state, click, type, fill or submit forms, walk flows like login/signup/search/add-to-cart/checkout, reproduce a bug at a given URL, screenshot the live page, or extract reliable selectors from a running page for automation. Trigger even for a single action ("open this page", "click that button on the site"), even when no URL is named but the target is clearly a live page, and on subagent dispatch with browser MCP access — when in doubt, load it. Do NOT load it for writing or styling UI code, fixing or reviewing form/auth/checkout code, authoring test files, or explaining how web tech works — those mention forms, buttons, or pages but need no live browser.
+  Drive a real browser against a live or staging website with the Drisp Browser (@drisp/browser-mcp) MCP tools (navigate, snapshot, click, type, find, get_form, screenshot, etc.). Load it whenever the task is to actually open a URL and observe or act on the running page: read live page state, click, type, fill or submit forms, walk flows like login/signup/search/add-to-cart/checkout, upload or attach a file to a form (file inputs, dropzones, native file pickers), reproduce a bug at a given URL, screenshot the live page, or extract reliable selectors from a running page for automation. Trigger even for a single action ("open this page", "click that button on the site"), even when no URL is named but the target is clearly a live page, and on subagent dispatch with browser MCP access — when in doubt, load it. Do NOT load it for writing or styling UI code, fixing or reviewing form/auth/checkout code, authoring test files, or explaining how web tech works — those mention forms, buttons, or pages but need no live browser.
 user-invocable: true
 argument-hint: "<url> <goal> — e.g. https://example.com 'Add item to cart'"
 ---
@@ -15,6 +15,7 @@ Common uses:
 - Review a live page or multi-step flow
 - Click through navigation, buttons, dialogs, and other actions
 - Fill, submit, or inspect forms and validation states
+- Upload or attach files through file inputs, dropzones, and native file pickers
 - Add products to cart or complete other in-page actions
 - Capture reliable Playwright selectors for key elements
 
@@ -360,24 +361,52 @@ click(eid="nd-dialog-ok")      # Submit
 
 After resolving a dialog, the page resumes normally and a fresh state is returned.
 
-### File picker workflow
+### File upload (file picker) workflow
+
+There is **no `upload` tool** — it was removed in v4.6.5. Uploads are click-driven:
 
 ```
-click(eid="<file-input-eid>")
-→ <non_dom kind="file-picker"> appears
+click(eid="<upload-control-eid>")
+→ <non_dom kind="file-picker" mode="selectSingle"> appears
 
-type(eid="nd-picker-path", text="/absolute/path/to/file.pdf")
+type(eid="nd-picker-path", text="/absolute/path/to/file.pdf", clear=true)
 click(eid="nd-picker-choose")
 ```
 
-For multi-file pickers (`mode="selectMultiple"`), type one absolute path per line:
+**Click whatever is visible and labelled** — "Choose file", "Attach", "Upload", a dropzone, or the `input[type=file]` itself. A direct file input builds the surface without dispatching a real click; an indirect trigger (styled button, `<label for>`, dropzone, hidden input) opens the native chooser, which is intercepted and turned into the same surface. Either way you get `nd-picker-*` controls, so don't hunt for the underlying input.
+
+`type` on `nd-picker-path` only stores the value on the surface; nothing reaches the page until `nd-picker-choose`. Use `clear=true` so you replace rather than append a previously typed path.
+
+For multi-file pickers (`mode="selectMultiple"`, i.e. the input has `multiple`), type one absolute path per line:
 
 ```
 type(eid="nd-picker-path", text="/path/to/a.pdf\n/path/to/b.pdf")
 click(eid="nd-picker-choose")
 ```
 
-The path must be absolute and accessible on the browser host (the machine running Chrome). After choosing, the page receives the file and the state returns to normal DOM interaction.
+Sending several paths to a `selectSingle` picker is rejected, not silently truncated.
+
+**Cancel with `nd-picker-cancel`**, never by clicking elsewhere — cancelling sends an empty file list that releases Chrome's pending chooser.
+
+#### Path rules
+
+- Absolute paths only; must be an existing regular file
+- The path must resolve on the **browser host** (the machine or container running Chrome), not just on the MCP server — they are assumed to share a filesystem. With remote/containerized Chrome, stage the file into a path that exists inside that container.
+- If `UPLOAD_ALLOWED_ROOTS` is set (colon-separated absolute dirs), every path must sit inside one of them; copy the file into an allowed root otherwise.
+
+#### Common upload errors
+
+| Error                                              | Fix                                                           |
+| -------------------------------------------------- | ------------------------------------------------------------- |
+| `File path is empty`                               | `type` into `nd-picker-path` before choosing                  |
+| `Path must be absolute on the browser host`        | Use a full absolute path                                      |
+| `File not found`                                   | Check the path resolves where Chrome runs; stage it if remote |
+| `Path is not a regular file`                       | Point at a file, not a directory                              |
+| `File ... is outside the configured allowed roots` | Copy the file into an allowed root                            |
+| `This file picker does not allow multiple files`   | Send exactly one path                                         |
+| `No active non-DOM surface`                        | `snapshot`, then click the upload control again               |
+
+After choosing, the surface clears and a fresh state returns. Confirm the upload the way the site reports it — a filename chip, a thumbnail, a newly enabled Submit button — before moving on.
 
 ### Using `find` and `get_element` with non-DOM surfaces
 
@@ -421,4 +450,6 @@ When a JavaScript dialog is blocking the page, calling `snapshot` returns the pr
 /drisp-browser https://developer.mozilla.org Find the Fetch API docs and note how the search flow behaves
 
 /drisp-browser https://example.com/login Extract the login form selectors and field purposes
+
+/drisp-browser https://example.com/profile Upload /Users/me/files/avatar.png to the profile photo field
 ```
