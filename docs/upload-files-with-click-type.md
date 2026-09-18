@@ -100,6 +100,8 @@ Symlinks are dereferenced (`realpath`) before the check, so a symlink inside an 
 
 ## Errors and what to do
 
+Path problems surface as `File path validation failed: <message>`.
+
 | Error                                              | Cause                                     | Fix                                                                    |
 | -------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------- |
 | `File path is empty`                               | `nd-picker-choose` clicked before typing  | `type` into `nd-picker-path` first                                     |
@@ -118,7 +120,7 @@ The surface clears, the page stabilizes and a fresh `<state>` is returned. Confi
 
 | Before (≤ 4.6.4)                          | Now                                                                             |
 | ----------------------------------------- | ------------------------------------------------------------------------------- |
-| `upload({ eid, paths: ['/a.pdf'] })`      | `click(eid)` → `type('nd-picker-path', '/a.pdf')` → `click('nd-picker-choose')` |
+| `upload({ eid, files: ['/a.pdf'] })`      | `click(eid)` → `type('nd-picker-path', '/a.pdf')` → `click('nd-picker-choose')` |
 | Tool resolved the real `input[type=file]` | Resolution still happens server-side, behind the picker surface                 |
 | `UPLOAD_ALLOWED_ROOTS`                    | Unchanged — same variable, same semantics                                       |
 
