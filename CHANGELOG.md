@@ -1,4 +1,11 @@
-## Unreleased
+## [4.7.1] - 2026-09-18
+
+- docs: document click-driven file uploads (no `upload` tool) (#104) — full guide in
+  `docs/upload-files-with-click-type.md`, expanded file-upload workflow in the
+  `drisp-browser` skill, README "File uploads" section, and `UPLOAD_ALLOWED_ROOTS` /
+  `DRISP_BROWSER_DOWNLOAD_DIR` added to the env var table.
+
+## [4.7.0] - 2026-08-17
 
 - **rename**: the package is renamed `agent-web-interface` → `@drisp/browser-mcp`,
   joining the Drisp family (see `docs/adr/0004`). The MCP server id is now
