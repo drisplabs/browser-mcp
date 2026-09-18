@@ -1,0 +1,108 @@
+name: Tag Release
+
+# Second half of the release flow. version-bump.yml opens a release PR; when that
+# PR merges, this workflow notices package.json's version changed, tags the merge
+# commit, and dispatches release.yml to publish.
+#
+# Tagging is done with GITHUB_TOKEN on purpose: GitHub does not start workflows
+# for refs pushed with GITHUB_TOKEN, so release.yml's `on: push: tags` trigger
+# stays quiet and the explicit dispatch below is the single release trigger.
+# Using a PAT here would fire both and publish twice.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  tag:
+    name: Tag and Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Compares against github.event.before — the exact previous tip of main —
+      # rather than HEAD^. Rebase merges are enabled on this repo, so a push can
+      # land several commits at once and HEAD^ is then a commit from inside the
+      # merged branch, not the previous state of main.
+      - name: Detect version change
+        id: detect
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          version_at() {
+            git show "$1:package.json" 2>/dev/null \
+              | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version" 2>/dev/null \
+              || true
+          }
+
+          NEW=$(node -p "require('./package.json').version")
+
+          # BEFORE is all-zeros when the branch was just created or force-pushed.
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] \
+             && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            BASE="$BEFORE"
+          else
+            BASE="HEAD^"
+            echo "No usable github.event.before — falling back to $BASE"
+          fi
+
+          OLD=$(version_at "$BASE")
+
+          echo "Comparing against: $BASE"
+          echo "Previous version: ${OLD:-<none>}"
+          echo "Current version:  $NEW"
+
+          if [ "$NEW" = "$OLD" ]; then
+            echo "Version unchanged — nothing to release."
+            echo "changed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if git rev-parse -q --verify "refs/tags/v$NEW" >/dev/null; then
+            echo "Tag v$NEW already exists — nothing to do."
+            echo "changed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "changed=true" >> $GITHUB_OUTPUT
+          echo "version=$NEW" >> $GITHUB_OUTPUT
+          echo "tag=v$NEW" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        if: steps.detect.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.detect.outputs.tag }}" -m "Release ${{ steps.detect.outputs.tag }}"
+          git push origin "${{ steps.detect.outputs.tag }}"
+
+      - name: Trigger release workflow
+        if: steps.detect.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Triggering release workflow for ${{ steps.detect.outputs.tag }}"
+          gh workflow run release.yml --field tag="${{ steps.detect.outputs.tag }}"
+
+      - name: Create summary
+        run: |
+          if [ "${{ steps.detect.outputs.changed }}" = "true" ]; then
+            {
+              echo "## Tagged \`${{ steps.detect.outputs.tag }}\`"
+              echo ""
+              echo "Release workflow dispatched — it will run \`npm run check\`, build, publish to npm, and create the GitHub release."
+            } >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No version change on this push — nothing tagged." >> $GITHUB_STEP_SUMMARY
+          fi
