@@ -594,6 +594,18 @@ Drisp Browser exposes MCP tools across the main phases of browser use.
 - `get_form`
 - `get_field`
 
+### File uploads
+
+There is no `upload` tool. Clicking an upload control (file input, "Choose file" button, `<label for>`, or dropzone) returns a synthetic **file-picker surface**, which you drive with the same `click` and `type` tools:
+
+```js
+click({ eid: '<upload-control-eid>' }); // → <non_dom kind="file-picker">
+type({ eid: 'nd-picker-path', text: '/absolute/path/to/file.pdf', clear: true });
+click({ eid: 'nd-picker-choose' });
+```
+
+Paths must be absolute and must resolve on the browser host (the machine or container running Chrome). `UPLOAD_ALLOWED_ROOTS` bounds which directories may be uploaded from. See [Upload Files With Click and Type](docs/upload-files-with-click-type.md).
+
 ### Canvas
 
 - `inspect_canvas`
@@ -816,20 +828,22 @@ npx @drisp/browser-mcp --transport http --port 8080
 
 ## Environment variables
 
-| Variable                     | Description                                              | Default              |
-| ---------------------------- | -------------------------------------------------------- | -------------------- |
-| `DRISP_BROWSER_MODE`         | Browser mode: `user`, `persistent`, or `isolated`        | unset; auto fallback |
-| `DRISP_BROWSER_HEADLESS`     | Run browser headless: `true` or `false`                  | `false`              |
-| `DRISP_BROWSER_CDP_URL`      | Explicit CDP endpoint; overrides browser mode            | unset                |
-| `DRISP_BROWSER_TRIM_REGIONS` | Set to `false` to disable region trimming globally       | `true`               |
-| `TRANSPORT`                  | Transport mode override, for example `http`              | unset                |
-| `HTTP_HOST`                  | Host for HTTP transport                                  | `127.0.0.1`          |
-| `HTTP_PORT`                  | Port for HTTP transport                                  | `3000`               |
-| `LOG_LEVEL`                  | Logging level                                            | `info`               |
-| `CEF_BRIDGE_HOST`            | CDP host for CEF bridge connection                       | `127.0.0.1`          |
-| `CEF_BRIDGE_PORT`            | CDP port for CEF bridge connection                       | `9223`               |
-| `BRING_TO_FRONT`             | Set to `true` to focus the Chrome tab before each action | `false`              |
-| `CHROME_PATH`                | Path to Chrome executable                                | unset                |
+| Variable                     | Description                                              | Default                |
+| ---------------------------- | -------------------------------------------------------- | ---------------------- |
+| `DRISP_BROWSER_MODE`         | Browser mode: `user`, `persistent`, or `isolated`        | unset; auto fallback   |
+| `DRISP_BROWSER_HEADLESS`     | Run browser headless: `true` or `false`                  | `false`                |
+| `DRISP_BROWSER_CDP_URL`      | Explicit CDP endpoint; overrides browser mode            | unset                  |
+| `DRISP_BROWSER_TRIM_REGIONS` | Set to `false` to disable region trimming globally       | `true`                 |
+| `TRANSPORT`                  | Transport mode override, for example `http`              | unset                  |
+| `HTTP_HOST`                  | Host for HTTP transport                                  | `127.0.0.1`            |
+| `HTTP_PORT`                  | Port for HTTP transport                                  | `3000`                 |
+| `LOG_LEVEL`                  | Logging level                                            | `info`                 |
+| `CEF_BRIDGE_HOST`            | CDP host for CEF bridge connection                       | `127.0.0.1`            |
+| `CEF_BRIDGE_PORT`            | CDP port for CEF bridge connection                       | `9223`                 |
+| `BRING_TO_FRONT`             | Set to `true` to focus the Chrome tab before each action | `false`                |
+| `CHROME_PATH`                | Path to Chrome executable                                | unset                  |
+| `UPLOAD_ALLOWED_ROOTS`       | Colon-separated absolute dirs uploads must stay within   | unset; no restriction  |
+| `DRISP_BROWSER_DOWNLOAD_DIR` | Absolute path for browser downloads                      | unset; browser default |
 
 ---
 
