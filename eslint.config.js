@@ -30,7 +30,18 @@ export default tseslint.config(
     },
   },
   {
+    // Vitest assertions reference methods without calling them
+    // (`expect(puppeteer.launch).toHaveBeenCalled()`). puppeteer-core 25
+    // declares `launch`/`connect` as class methods, so passing them unbound
+    // trips this rule even though the assertion never invokes them.
+    files: ['tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
+  {
     ignores: [
+      '.claude/',
       'dist/',
       'node_modules/',
       'scripts/',

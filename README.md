@@ -948,7 +948,7 @@ npm run mcp:inspect
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 22.12 or newer
 - Chrome or Chromium
 - An MCP-compatible client such as Claude Code, Claude Desktop, Cursor, or VS Code
 
