@@ -22,11 +22,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Node 20.x only - browser tests don't need multi-version matrix
+      # Node 22.x only - browser tests don't need multi-version matrix
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '22.x'
           cache: 'npm'
 
       - name: Install dependencies

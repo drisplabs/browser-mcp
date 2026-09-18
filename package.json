@@ -61,7 +61,7 @@
     "chrome-remote-interface": "^0.33.3",
     "express": "^5.2.1",
     "jsdom": "^27.4.0",
-    "puppeteer-core": "^24.36.1",
+    "puppeteer-core": "^25.11.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {
@@ -98,6 +98,6 @@
     ]
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.12.0"
   }
 }

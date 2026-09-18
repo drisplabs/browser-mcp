@@ -6,22 +6,5 @@
     "advisory, so stale suppressions cannot accumulate silently.",
     "See scripts/audit-gate.mjs for the policy."
   ],
-  "allow": [
-    {
-      "ghsa": "GHSA-jmr9-qjv8-65gv",
-      "package": "extract-zip",
-      "severity": "high",
-      "expires": "2026-12-31",
-      "issue": "https://github.com/drisplabs/browser-mcp/issues/110",
-      "reason": "Reached only through @puppeteer/browsers' browser-download path (install/extract of a Chrome zip). This package ships puppeteer-core and resolves Chrome via `channel`/`executablePath` or attaches with `connect()`, so no archive is ever downloaded or extracted at runtime. extract-zip has no patched release; upstream fixed it by dropping the dependency in @puppeteer/browsers 3.x, which requires puppeteer-core v25 (semver-major)."
-    },
-    {
-      "ghsa": "GHSA-7pqw-9j4j-h8q3",
-      "package": "extract-zip",
-      "severity": "high",
-      "expires": "2026-12-31",
-      "issue": "https://github.com/drisplabs/browser-mcp/issues/110",
-      "reason": "Same root cause and same unreachable code path as GHSA-jmr9-qjv8-65gv. Cleared by the puppeteer-core v25 upgrade."
-    }
-  ]
+  "allow": []
 }
