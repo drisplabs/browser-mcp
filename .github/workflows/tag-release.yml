@@ -31,12 +31,35 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Compares against github.event.before — the exact previous tip of main —
+      # rather than HEAD^. Rebase merges are enabled on this repo, so a push can
+      # land several commits at once and HEAD^ is then a commit from inside the
+      # merged branch, not the previous state of main.
       - name: Detect version change
         id: detect
+        env:
+          BEFORE: ${{ github.event.before }}
         run: |
-          NEW=$(node -p "require('./package.json').version")
-          OLD=$(git show HEAD^:package.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version" || echo "")
+          version_at() {
+            git show "$1:package.json" 2>/dev/null \
+              | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version" 2>/dev/null \
+              || true
+          }
 
+          NEW=$(node -p "require('./package.json').version")
+
+          # BEFORE is all-zeros when the branch was just created or force-pushed.
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] \
+             && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            BASE="$BEFORE"
+          else
+            BASE="HEAD^"
+            echo "No usable github.event.before — falling back to $BASE"
+          fi
+
+          OLD=$(version_at "$BASE")
+
+          echo "Comparing against: $BASE"
           echo "Previous version: ${OLD:-<none>}"
           echo "Current version:  $NEW"
 
