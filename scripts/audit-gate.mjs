@@ -43,7 +43,7 @@ function runAudit() {
       cwd: REPO_ROOT,
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
-   });
+    });
   } catch (err) {
     if (typeof err.stdout === 'string' && err.stdout.trim()) return err.stdout;
     throw err;
@@ -64,7 +64,6 @@ function collectAdvisories(report) {
         severity: via.severity ?? node.severity,
         title: via.title ?? '(no title)',
         url: via.url ?? '',
-        isDirect: node.isDirect === true,
       });
     }
   }
