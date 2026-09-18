@@ -1,3 +1,19 @@
+## [4.7.2] - 2026-09-18
+
+- fix: restore the click-driven file-picker surface (#105, #106). Clicking an upload
+  control produced no `<non_dom kind="file-picker">` surface, so `type(eid="nd-picker-path")`
+  always failed with "No active non-DOM surface" — with the `upload` tool gone since 4.6.5,
+  file uploads were impossible. Three defects: `input_type` was not extracted for
+  `input[type=file]` (Chrome's AX tree reports it as `role="button"`), leaving the direct-input
+  fast path unreachable; the `Page.fileChooserOpened` flag was read before the event arrived,
+  so every click's chooser was only ever seen by the _next_ action; and `multiple` was never
+  extracted, so every picker rendered `selectSingle`.
+- fix: `<input type="submit">` is now detected as a submit button even when its value matches
+  no submit keyword (e.g. `value="Go"`). Follows from the `input_type` fix above, which revived
+  a previously unreachable branch in form submit detection.
+- fix: a failure to enable file-chooser interception is now logged instead of silently
+  swallowed — without it, an upload click opens a native OS picker and the session hangs.
+
 ## [4.7.1] - 2026-09-18
 
 - docs: document click-driven file uploads (no `upload` tool) (#104) — full guide in

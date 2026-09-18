@@ -1,6 +1,6 @@
 {
   "name": "@drisp/browser-mcp",
-  "version": "4.7.1",
+  "version": "4.7.2",
   "description": "Token-efficient browser automation MCP for AI agents — semantic page snapshots and stable element IDs.",
   "type": "module",
   "main": "dist/src/index.js",
