@@ -1,3 +1,10 @@
+## [4.7.3] - 2026-09-18
+
+- fix(ci): version bump opens a release PR instead of pushing to main (#109)
+- fix(ci): make the Security Audit gate meaningful instead of permanently red (#108)
+- chore: bump version to 4.7.2 (#107)
+- fix(#105): restore the click-driven file-picker surface (#106)
+
 ## [4.7.2] - 2026-09-18
 
 - fix: restore the click-driven file-picker surface (#105, #106). Clicking an upload
