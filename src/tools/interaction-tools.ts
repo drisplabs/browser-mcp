@@ -425,9 +425,12 @@ async function clickElementWithNonDomDetection(
   //    and a permission request — arrive over CDP *during* that window, after
   //    Input.dispatchMouseEvent has already been acknowledged. Reading either
   //    flag before stabilizing loses the race: the event lands milliseconds
-  //    later and is only ever seen by the *next* action. Neither surface blocks
-  //    the renderer, so stabilizing first and recapturing afterward is safe and
-  //    costs no extra latency.
+  //    later and is only ever seen by the *next* action. stabilizeDom always
+  //    arms its quiet timer (DEFAULT_QUIET_WINDOW_MS = 100ms) before it can
+  //    resolve, so this window cannot close inside the observed ~5ms lag.
+  //    Both are `blocking` surfaces for the agent, but neither blocks the
+  //    page's renderer the way a JavaScript dialog does, so stabilizing first
+  //    and recapturing afterward is safe and costs no extra latency.
   const permissionDetector = getOrCreatePermissionDetector(handle.page);
   await stabilizeAfterAction(handle.page);
 
@@ -594,7 +597,7 @@ export async function click(
     // DOM element click
     const snap = ctx.requireSnapshot(pageId);
     const node = ctx.resolveElementByEid(pageId, input.eid!, snap);
-    const attrs = node.attributes as Record<string, unknown> | undefined;
+    const attrs = node.attributes;
 
     // Direct file-input fast path: when the snapshot already says this node is an
     // input[type=file], build the picker surface without dispatching a real click
@@ -603,10 +606,7 @@ export async function click(
     // they emit Page.fileChooserOpened on the real click and are caught by the
     // wasFileChooserOpenedSince flag in clickElementWithNonDomDetection.
     if (attrs?.input_type === 'file') {
-      const surface = buildFilePickerSurfaceForInput(
-        node.backend_node_id,
-        attrs?.multiple === true
-      );
+      const surface = buildFilePickerSurfaceForInput(node.backend_node_id, attrs.multiple === true);
       setSurface(handleRef.current.page, surface);
 
       const captureResult = await captureSnapshot();
