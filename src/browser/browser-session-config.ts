@@ -35,6 +35,9 @@ export type BrowserMode = (typeof BROWSER_MODES)[number];
  * Browser session configuration loaded from environment variables.
  */
 export interface BrowserSessionConfig {
+  desktop?: { socketPath: string; credential: string };
+  /** Development compatibility probe only; production requires scoped desktop binding. */
+  cefCompatibility?: boolean;
   /** Browser mode. undefined = auto (fallback chain: user → persistent → isolated) */
   browserMode?: BrowserMode;
 
@@ -80,8 +83,16 @@ export function loadBrowserConfig(): BrowserSessionConfig {
 
   const downloadDir = resolveDownloadDir();
 
+  const desktopRequested = process.env.DRISP_BROWSER_DESKTOP_COMPATIBILITY === 'true';
+  const socketPath = process.env.DRISP_BROWSER_FIXTURE_SOCKET;
+  const credential = process.env.DRISP_BROWSER_FIXTURE_CREDENTIAL;
+  if (desktopRequested && (!socketPath || !isAbsolute(socketPath) || !credential || !cdpUrl)) {
+    throw new Error('Desktop compatibility requires an absolute socket, credential and loopback CDP URL');
+  }
   return {
+    desktop: desktopRequested ? { socketPath: socketPath!, credential: credential! } : undefined,
     browserMode,
+    cefCompatibility: process.env.DRISP_BROWSER_CEF_COMPATIBILITY === 'true',
     headless: readEnv('DRISP_BROWSER_HEADLESS', 'AWI_HEADLESS')?.trim().toLowerCase() === 'true',
     cdpUrl,
     stealth,

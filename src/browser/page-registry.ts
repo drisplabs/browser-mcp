@@ -48,13 +48,14 @@ export class PageRegistry {
    * @returns PageHandle with unique page_id
    * @throws Error if page is already closed
    */
-  register(page: Page, cdp: CdpClient): PageHandle {
+  register(page: Page, cdp: CdpClient, stableID?: string): PageHandle {
     // Validate page is not closed (Puppeteer uses isClosed())
     if (page.isClosed()) {
       throw new Error('Cannot register a closed page');
     }
 
-    const page_id = `page-${randomUUID()}`;
+    const page_id = stableID ?? `page-${randomUUID()}`;
+    if (this.pages.has(page_id)) throw new Error("Page handle already registered");
 
     const handle: PageHandle = {
       page_id,

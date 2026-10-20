@@ -87,6 +87,9 @@ export interface LaunchOptions {
  * Options for connecting to an existing browser via CDP
  */
 export interface ConnectOptions {
+  desktop?: { socketPath: string; credential: string };
+  /** Explicit native CEF compatibility transport, never ordinary Chrome. */
+  cefCompatibility?: boolean;
   /** WebSocket endpoint URL (e.g., ws://localhost:9222/devtools/browser/...) */
   browserWSEndpoint?: string;
 
