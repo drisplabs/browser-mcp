@@ -6,6 +6,8 @@
  */
 
 import fs from 'node:fs';
+import { CefTransport } from './cef-transport.js';
+import { DesktopClient, DesktopTransport } from './desktop-transport.js';
 import os from 'node:os';
 import path from 'node:path';
 import puppeteer, {
@@ -70,6 +72,17 @@ export const DEFAULT_USER_DATA_DIR = path.join(
  */
 export class SessionManager {
   private browser: Browser | null = null;
+  private desktopTransport?: DesktopTransport;
+
+  async refreshDesktopTargets(): Promise<void> { await this.desktopTransport?.refresh(); }
+
+  private desktopPageID(page: Page): string | undefined {
+    if (!this.desktopTransport) return undefined;
+    const targetID = (page.target() as unknown as { _targetId: string })._targetId;
+    const id = this.desktopTransport.tabID(targetID);
+    if (!id) throw new Error('Page is not owned by the bound desktop session');
+    return id;
+  }
   private context: BrowserContext | null = null;
   private readonly registry: PageRegistry;
   private readonly logger = getLogger();
@@ -415,8 +428,15 @@ export class SessionManager {
       // Target.setAutoAttach fails for those sessions (-32001), leaving them stuck
       // in #targetIdsForInit so connect() never resolves.
       // See: https://github.com/puppeteer/puppeteer/issues/11627
+      if (options.desktop) {
+        this.desktopTransport = await DesktopTransport.connect(
+          new DesktopClient(options.desktop.socketPath, options.desktop.credential),
+          options.endpointUrl ?? options.browserURL ?? '');
+      }
       const connectionPromise = puppeteer.connect({
-        ...connectOptions,
+        ...(this.desktopTransport ? { transport: this.desktopTransport } : options.cefCompatibility
+          ? { transport: await CefTransport.connect(options.endpointUrl ?? options.browserURL ?? options.browserWSEndpoint ?? '') }
+          : connectOptions),
         defaultViewport: null,
         targetFilter: (target) => {
           if (target.url().startsWith('chrome-extension://')) return false;
@@ -445,7 +465,9 @@ export class SessionManager {
 
       // Get the default context (existing browser's context)
       const contexts = browser.browserContexts();
-      if (contexts.length > 0) {
+      if (options.desktop) {
+        this.context = browser.defaultBrowserContext();
+      } else if (contexts.length > 0) {
         this.context = contexts[0];
       } else {
         // If no context exists, use default (shouldn't normally happen)
@@ -453,7 +475,7 @@ export class SessionManager {
       }
 
       this.browser = browser;
-      this.isExternalBrowser = !options.ownedReconnect;
+      this.isExternalBrowser = Boolean(options.desktop) || !options.ownedReconnect;
       // Stealth page injection only runs for owned (non-external) browsers;
       // connecting to the user's real Chrome already has a genuine fingerprint.
       this.stealthEnabled = options.stealth ?? false;
@@ -472,6 +494,8 @@ export class SessionManager {
       });
     } catch (error) {
       // Cleanup on failure - for external browsers, disconnect instead of close
+      this.desktopTransport?.close();
+      this.desktopTransport = undefined;
       if (browser) {
         await browser.disconnect().catch(() => {
           /* Intentionally empty - cleanup is best-effort */
@@ -544,7 +568,7 @@ export class SessionManager {
 
     const cdpSession = await page.createCDPSession();
     const cdpClient = new PuppeteerCdpClient(cdpSession);
-    const handle = this.registry.register(page, cdpClient);
+    const handle = this.registry.register(page, cdpClient, this.desktopPageID(page));
 
     this.registry.updateMetadata(handle.page_id, { url: page.url() });
 
@@ -575,7 +599,7 @@ export class SessionManager {
     const page = await this.context.newPage();
     const cdpSession = await page.createCDPSession();
     const cdpClient = new PuppeteerCdpClient(cdpSession);
-    const handle = this.registry.register(page, cdpClient);
+    const handle = this.registry.register(page, cdpClient, this.desktopPageID(page));
 
     this.logger.debug('Created page', { page_id: handle.page_id });
 
@@ -641,6 +665,7 @@ export class SessionManager {
    * @throws Error if page_id is provided but not found, or if browser not running
    */
   async resolvePageOrCreate(page_id?: string): Promise<PageHandle> {
+    if (page_id && this.desktopTransport && !this.registry.get(page_id)) await this.syncPages();
     if (page_id) {
       const handle = this.getPage(page_id);
       if (!handle) {
@@ -1144,6 +1169,7 @@ export class SessionManager {
    * @returns Array of all PageHandle objects after sync (includes previously registered pages)
    */
   async syncPages(): Promise<PageHandle[]> {
+    await this.refreshDesktopTargets();
     if (!this.context) {
       return this.registry.list();
     }
@@ -1165,7 +1191,7 @@ export class SessionManager {
       try {
         const cdpSession = await page.createCDPSession();
         const cdpClient = new PuppeteerCdpClient(cdpSession);
-        const handle = this.registry.register(page, cdpClient);
+        const handle = this.registry.register(page, cdpClient, this.desktopPageID(page));
         this.registry.updateMetadata(handle.page_id, { url: page.url() });
         await this.setupPageTracking(page);
         this.logger.debug('Synced unregistered page', { page_id: handle.page_id, url: page.url() });
@@ -1309,6 +1335,9 @@ export class SessionManager {
     }
 
     page.on('close', () => {
+      if (this.desktopTransport && handle && this.registry.get(handle.page_id) === handle) {
+        this.registry.remove(handle.page_id);
+      }
       removeTracker(page);
       removeRecorder(page);
       // Apply the default auto-dismiss policy before tearing down the manager so a

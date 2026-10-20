@@ -33,6 +33,7 @@ export async function ensureBrowserReady(
   config: BrowserSessionConfig
 ): Promise<void> {
   if (session.isRunning()) {
+    if (config.desktop) await session.refreshDesktopTargets();
     return;
   }
 
@@ -43,11 +44,13 @@ export async function ensureBrowserReady(
     return;
   }
 
+  if (config.cefCompatibility && !config.cdpUrl) throw new Error('CEF compatibility requires an explicit CDP URL');
+
   // Explicit CDP URL — connect only, no fallback
   if (config.cdpUrl) {
     logger.info('Connecting to explicit CDP endpoint', { cdpUrl: config.cdpUrl });
     try {
-      await session.connect({ endpointUrl: config.cdpUrl, stealth: config.stealth });
+      await session.connect({ endpointUrl: config.cdpUrl, stealth: config.stealth, cefCompatibility: config.cefCompatibility, desktop: config.desktop });
       logger.info('Connected to CDP endpoint');
     } catch (error) {
       const msg = extractErrorMessage(error);
